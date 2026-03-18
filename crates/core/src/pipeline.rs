@@ -113,6 +113,10 @@ pub fn process(
 
     // Step 3: Summarize (optional — depends on config.summarization.engine)
     // Pass user notes to the summarizer as high-priority context
+    // Step 3: Summarize + extract structured intent
+    let mut structured_actions: Vec<markdown::ActionItem> = Vec::new();
+    let mut structured_decisions: Vec<markdown::Decision> = Vec::new();
+
     let summary: Option<String> = if config.summarization.engine != "none" {
         tracing::info!(step = "summarize", "generating summary");
         let transcript_with_notes = if let Some(ref n) = user_notes {
@@ -124,7 +128,12 @@ pub fn process(
         } else {
             transcript.clone()
         };
-        summarize::summarize(&transcript_with_notes, config).map(|s| summarize::format_summary(&s))
+        summarize::summarize(&transcript_with_notes, config).map(|s| {
+            // Extract structured data from the summary
+            structured_actions = extract_action_items(&s);
+            structured_decisions = extract_decisions(&s);
+            summarize::format_summary(&s)
+        })
     } else {
         None
     };
@@ -150,6 +159,8 @@ pub fn process(
         calendar_event: None,
         people: vec![],
         context: pre_context,
+        action_items: structured_actions,
+        decisions: structured_decisions,
     };
 
     tracing::info!(step = "write", "writing markdown");
@@ -224,6 +235,127 @@ fn generate_title(transcript: &str) -> String {
     }
 }
 
+/// Extract structured action items from a Summary.
+/// Parses lines like "- @user: Send pricing doc by Friday" into ActionItem structs.
+fn extract_action_items(summary: &summarize::Summary) -> Vec<markdown::ActionItem> {
+    summary
+        .action_items
+        .iter()
+        .map(|item| {
+            let (assignee, task) = if let Some(rest) = item.strip_prefix('@') {
+                // "@user: Send pricing doc by Friday"
+                if let Some(colon_pos) = rest.find(':') {
+                    (
+                        rest[..colon_pos].trim().to_string(),
+                        rest[colon_pos + 1..].trim().to_string(),
+                    )
+                } else {
+                    ("unassigned".to_string(), item.clone())
+                }
+            } else {
+                ("unassigned".to_string(), item.clone())
+            };
+
+            // Try to extract due date from phrases like "by Friday", "(due March 21)"
+            let due = extract_due_date(&task);
+
+            markdown::ActionItem {
+                assignee,
+                task: task.trim_end_matches(')').trim().to_string(),
+                due,
+                status: "open".to_string(),
+            }
+        })
+        .collect()
+}
+
+/// Extract structured decisions from a Summary.
+fn extract_decisions(summary: &summarize::Summary) -> Vec<markdown::Decision> {
+    summary
+        .decisions
+        .iter()
+        .map(|text| {
+            // Try to infer topic from the first few words
+            let topic = infer_topic(text);
+            markdown::Decision {
+                text: text.clone(),
+                topic,
+            }
+        })
+        .collect()
+}
+
+/// Try to extract a due date from action item text.
+/// Matches patterns like "by Friday", "by March 21", "(due 2026-03-21)".
+fn extract_due_date(text: &str) -> Option<String> {
+    let lower = text.to_lowercase();
+
+    // "by Friday", "by next week", "by March 21"
+    if let Some(pos) = lower.find(" by ") {
+        let after = &text[pos + 4..];
+        let due: String = after
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == ' ' || *c == '-')
+            .collect();
+        let due = due.trim().to_string();
+        if !due.is_empty() {
+            return Some(due);
+        }
+    }
+
+    // "(due March 21)"
+    if let Some(pos) = lower.find("due ") {
+        let after = &text[pos + 4..];
+        let due: String = after
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == ' ' || *c == '-')
+            .collect();
+        let due = due.trim().to_string();
+        if !due.is_empty() {
+            return Some(due);
+        }
+    }
+
+    None
+}
+
+/// Infer a topic from decision text by extracting the first noun phrase.
+fn infer_topic(text: &str) -> Option<String> {
+    // Simple heuristic: use the first 3-5 meaningful words as the topic
+    let words: Vec<&str> = text
+        .split_whitespace()
+        .filter(|w| {
+            let lower = w.to_lowercase();
+            !matches!(
+                lower.as_str(),
+                "the"
+                    | "a"
+                    | "an"
+                    | "to"
+                    | "for"
+                    | "of"
+                    | "in"
+                    | "on"
+                    | "at"
+                    | "is"
+                    | "was"
+                    | "will"
+                    | "should"
+                    | "we"
+                    | "they"
+                    | "it"
+            )
+        })
+        .take(4)
+        .collect();
+
+    if words.is_empty() {
+        None
+    } else {
+        Some(words.join(" ").to_lowercase())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -253,5 +385,62 @@ mod tests {
 
         let duration = estimate_duration(&path);
         assert_eq!(duration, "1m 30s");
+    }
+
+    #[test]
+    fn extract_action_items_parses_assignee_and_task() {
+        let summary = summarize::Summary {
+            text: String::new(),
+            key_points: vec![],
+            decisions: vec![],
+            action_items: vec![
+                "@user: Send pricing doc by Friday".into(),
+                "@sarah: Review competitor grid (due March 21)".into(),
+                "Unassigned task with no @".into(),
+            ],
+        };
+
+        let items = extract_action_items(&summary);
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0].assignee, "mat");
+        assert!(items[0].task.contains("Send pricing doc"));
+        assert_eq!(items[0].due, Some("Friday".into()));
+        assert_eq!(items[0].status, "open");
+
+        assert_eq!(items[1].assignee, "sarah");
+        assert_eq!(items[1].due, Some("March 21".into()));
+
+        assert_eq!(items[2].assignee, "unassigned");
+    }
+
+    #[test]
+    fn extract_decisions_with_topic_inference() {
+        let summary = summarize::Summary {
+            text: String::new(),
+            key_points: vec![],
+            decisions: vec![
+                "Price advisor platform at monthly billing/mo".into(),
+                "Use REST over GraphQL for the new API".into(),
+            ],
+            action_items: vec![],
+        };
+
+        let decisions = extract_decisions(&summary);
+        assert_eq!(decisions.len(), 2);
+        assert!(decisions[0].topic.is_some());
+        assert!(decisions[0].text.contains("monthly billing"));
+    }
+
+    #[test]
+    fn extract_due_date_patterns() {
+        assert_eq!(
+            extract_due_date("Send doc by Friday"),
+            Some("Friday".into())
+        );
+        assert_eq!(
+            extract_due_date("Review (due March 21)"),
+            Some("March 21".into())
+        );
+        assert_eq!(extract_due_date("Just do this thing"), None);
     }
 }

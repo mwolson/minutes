@@ -115,6 +115,97 @@ fn process_file(
 
 // split_frontmatter and extract_field are in markdown.rs (shared)
 
+/// Find meetings with open action items, optionally filtered by assignee.
+/// Parses YAML frontmatter for the structured action_items field.
+pub fn find_open_actions(
+    config: &Config,
+    assignee: Option<&str>,
+) -> Result<Vec<ActionResult>, SearchError> {
+    let dir = &config.output_dir;
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut results = Vec::new();
+
+    for entry in WalkDir::new(dir)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "md"))
+    {
+        let path = entry.path();
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let (fm_str, _) = split_frontmatter(&content);
+        let title = extract_field(fm_str, "title").unwrap_or_default();
+        let date = extract_field(fm_str, "date").unwrap_or_default();
+
+        // Parse action_items from frontmatter (YAML list)
+        // Look for lines like "  - assignee: mat" within the action_items block
+        if !content.contains("action_items:") {
+            continue;
+        }
+
+        // Simple parse: find action_items section in frontmatter YAML
+        let full_fm = format!("---\n{}\n---", fm_str);
+        let parsed: Result<serde_yaml::Value, _> = serde_yaml::from_str(&full_fm);
+        if let Ok(yaml) = parsed {
+            if let Some(items) = yaml.get("action_items").and_then(|v| v.as_sequence()) {
+                for item in items {
+                    let item_assignee = item
+                        .get("assignee")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unassigned");
+                    let item_status = item
+                        .get("status")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("open");
+                    let item_task = item.get("task").and_then(|v| v.as_str()).unwrap_or("");
+                    let item_due = item
+                        .get("due")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string());
+
+                    if item_status != "open" {
+                        continue;
+                    }
+                    if let Some(filter) = assignee {
+                        if !item_assignee.eq_ignore_ascii_case(filter) {
+                            continue;
+                        }
+                    }
+
+                    results.push(ActionResult {
+                        meeting_path: path.to_path_buf(),
+                        meeting_title: title.clone(),
+                        meeting_date: date.clone(),
+                        assignee: item_assignee.to_string(),
+                        task: item_task.to_string(),
+                        due: item_due,
+                    });
+                }
+            }
+        }
+    }
+
+    results.sort_by(|a, b| b.meeting_date.cmp(&a.meeting_date));
+    Ok(results)
+}
+
+/// A structured action item result from cross-meeting search.
+#[derive(Debug, Clone, Serialize)]
+pub struct ActionResult {
+    pub meeting_path: PathBuf,
+    pub meeting_title: String,
+    pub meeting_date: String,
+    pub assignee: String,
+    pub task: String,
+    pub due: Option<String>,
+}
+
 /// Extract a snippet around the first match of the query.
 fn extract_snippet(body: &str, query: &str) -> String {
     // Find the query in the body case-insensitively.

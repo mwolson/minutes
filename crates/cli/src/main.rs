@@ -63,6 +63,13 @@ enum Commands {
         limit: usize,
     },
 
+    /// Show open action items across all meetings
+    Actions {
+        /// Filter by assignee name
+        #[arg(short, long)]
+        assignee: Option<String>,
+    },
+
     /// List recent meetings and voice memos
     List {
         /// Maximum number of results
@@ -150,6 +157,7 @@ fn main() -> Result<()> {
             since,
             limit,
         } => cmd_search(&query, content_type, since, limit, &config),
+        Commands::Actions { assignee } => cmd_actions(assignee.as_deref(), &config),
         Commands::List {
             limit,
             content_type,
@@ -341,6 +349,27 @@ fn cmd_search(
 
     // Also output JSON for programmatic use
     let json = serde_json::to_string_pretty(&limited)?;
+    println!("{}", json);
+    Ok(())
+}
+
+fn cmd_actions(assignee: Option<&str>, config: &Config) -> Result<()> {
+    let results = minutes_core::search::find_open_actions(config, assignee)
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+
+    if results.is_empty() {
+        eprintln!("No open action items found.");
+        return Ok(());
+    }
+
+    eprintln!("Open action items ({}):", results.len());
+    for item in &results {
+        let due = item.due.as_deref().unwrap_or("no due date");
+        eprintln!("  @{}: {} ({})", item.assignee, item.task, due);
+        eprintln!("    from: {} — {}", item.meeting_date, item.meeting_title);
+    }
+
+    let json = serde_json::to_string_pretty(&results)?;
     println!("{}", json);
     Ok(())
 }

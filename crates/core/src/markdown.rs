@@ -50,6 +50,30 @@ pub struct Frontmatter {
     pub people: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub action_items: Vec<ActionItem>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub decisions: Vec<Decision>,
+}
+
+/// A structured action item extracted from a meeting.
+/// Queryable via MCP tools: filter by assignee, status, due date.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionItem {
+    pub assignee: String,
+    pub task: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub due: Option<String>,
+    pub status: String, // "open" or "done"
+}
+
+/// A structured decision extracted from a meeting.
+/// Queryable via MCP tools: search across all meetings for decision history.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Decision {
+    pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub topic: Option<String>,
 }
 
 /// Result of writing a meeting/memo to disk.
@@ -247,6 +271,8 @@ mod tests {
             calendar_event: None,
             people: vec![],
             context: None,
+            action_items: vec![],
+            decisions: vec![],
         }
     }
 
