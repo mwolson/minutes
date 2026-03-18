@@ -109,18 +109,16 @@ pub fn record_to_wav(
                             return;
                         }
 
-                        // Mix to mono, apply gain, compute RMS for level meter
-                        const GAIN: f32 = 8.0; // Boost quiet mic input
+                        // Mix to mono, compute RMS for level meter
                         for chunk in data.chunks(ch) {
-                            let mono: f32 = (chunk.iter().sum::<f32>() / ch as f32) * GAIN;
-                            let mono = mono.clamp(-1.0, 1.0);
+                            let mono: f32 = chunk.iter().sum::<f32>() / ch as f32;
                             input_samples.push(mono);
                             level_accum += (mono as f64) * (mono as f64);
                             level_count += 1;
                             if level_count >= level_interval {
                                 let rms = (level_accum / level_count as f64).sqrt();
-                                // Scale to 0-100 (voice typically peaks ~0.1–0.5)
-                                let level = (rms * 300.0).min(100.0) as u32;
+                                // Scale to 0-100 (raw mic levels are low, ~0.001–0.05)
+                                let level = (rms * 2000.0).min(100.0) as u32;
                                 AUDIO_LEVEL.store(level, Ordering::Relaxed);
                                 level_accum = 0.0;
                                 level_count = 0;
@@ -177,11 +175,9 @@ pub fn record_to_wav(
                             return;
                         }
 
-                        const GAIN: f32 = 8.0;
                         for chunk in data.chunks(ch) {
                             let mono: f32 =
-                                (chunk.iter().map(|&s| s as f32 / 32768.0).sum::<f32>() / ch as f32) * GAIN;
-                            let mono = mono.clamp(-1.0, 1.0);
+                                chunk.iter().map(|&s| s as f32 / 32768.0).sum::<f32>() / ch as f32;
                             input_samples.push(mono);
                             level_accum += (mono as f64) * (mono as f64);
                             level_count += 1;

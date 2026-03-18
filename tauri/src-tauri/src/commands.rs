@@ -46,13 +46,7 @@ pub fn start_recording(
 
     minutes_core::notes::cleanup();
     minutes_core::pid::remove().ok();
-    // Keep WAV for debugging — copy to meetings dir
     if wav_path.exists() {
-        let debug_wav = dirs::home_dir().unwrap_or_default()
-            .join("meetings")
-            .join("last-recording-debug.wav");
-        std::fs::copy(&wav_path, &debug_wav).ok();
-        eprintln!("[minutes] Debug WAV saved to: {}", debug_wav.display());
         std::fs::remove_file(&wav_path).ok();
     }
     recording.store(false, Ordering::Relaxed);

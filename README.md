@@ -52,11 +52,36 @@ brew tap silverstein/tap
 brew install minutes
 
 # From source (requires Rust + cmake)
+# macOS 15+ / Xcode 26+: set C++ include path for whisper.cpp
+export CXXFLAGS="-I$(xcrun --show-sdk-path)/usr/include/c++/v1"
 cargo install --path crates/cli
 
-# Download whisper model (~466MB)
-minutes setup --model small
+# Download whisper model
+minutes setup --model tiny    # Quick start (75MB, fast, less accurate)
+minutes setup --model small   # Recommended (466MB, good accuracy)
+minutes setup --model base    # Middle ground (141MB)
 ```
+
+### Desktop app (optional)
+
+```bash
+export CXXFLAGS="-I$(xcrun --show-sdk-path)/usr/include/c++/v1"
+export MACOSX_DEPLOYMENT_TARGET=11.0
+cargo tauri build --bundles app
+# Opens: target/release/bundle/macos/Minutes.app
+```
+
+The desktop app adds a system tray icon, recording controls, audio visualizer, and a meeting list window. macOS will prompt for microphone permission on first recording.
+
+### Troubleshooting
+
+**No speech detected / blank audio:**
+The most common cause is microphone permissions. Check System Settings → Privacy & Security → Microphone and ensure your terminal app (or Minutes.app) has access.
+
+**tmux users:** tmux server runs as a separate process that doesn't inherit your terminal's mic permission. Either run `minutes record` from a direct terminal window (not inside tmux), or use the Minutes.app desktop bundle which gets its own mic permission.
+
+**Build fails with C++ errors on macOS 26+:**
+whisper.cpp needs the SDK include path. Set `CXXFLAGS` as shown above before building.
 
 ## Features
 

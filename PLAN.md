@@ -631,20 +631,30 @@ context: "Discuss Q2 pricing, follow up on annual billing minimum decision"
 [0:00] So let's talk about the pricing for advisors...
 ```
 
-### Phase 3: Tauri Menu Bar App (Week 3-4) — "Native menu bar experience"
+### Phase 3: Tauri Desktop App (Week 3-4) — "Native menu bar experience"
 
-**Goal**: Calendar-aware menu bar app. Suggests recording 2 min before meetings. Granola UX, open-source.
+**Goal**: Desktop app with system tray + main window. Record, transcribe, search from a native UI.
 
-| Task | Description | Beads ID |
-|------|-------------|----------|
-| P3.1 | Tauri v2 project setup (menu bar / system tray mode) | TBD |
-| P3.2 | Calendar polling (macOS EventKit or ical) | TBD |
-| P3.3 | Meeting suggestion notification (2 min before) | TBD |
-| P3.4 | Recording indicator (menu bar icon glow/badge) | TBD |
-| P3.5 | Minimal web UI: meeting list, transcript viewer, settings, **note input field during recording** | TBD |
-| P3.6 | Auto-start on login (launchd integration) | TBD |
-| P3.7 | First-run onboarding (permissions, model download, LLM config) | TBD |
-| P3.8 | Homebrew cask formula | TBD |
+| Task | Description | Status |
+|------|-------------|--------|
+| P3.1 | Tauri v2 project setup (system tray + main window) | **DONE** |
+| P3.2 | Main app window: meeting list, search, recording controls, date grouping | **DONE** |
+| P3.3 | Audio visualizer: real-time RMS level bars during recording | **DONE** |
+| P3.4 | Recording indicator: tray icon → red dot, menu items gray out | **DONE** |
+| P3.5 | Note taking UI: inline quick-note during recording + standalone popup | **DONE** |
+| P3.6 | macOS mic permission: Info.plist + entitlements.plist + .app bundle | **DONE** |
+| P3.7 | .app bundle build: `cargo tauri build --bundles app` → Minutes.app | **DONE** |
+| P3.8 | Calendar polling (macOS EventKit or ical) | TBD |
+| P3.9 | Meeting suggestion notification (2 min before) | TBD |
+| P3.10 | Auto-start on login (launchd integration) | TBD |
+| P3.11 | First-run onboarding (permissions, model download, LLM config) | TBD |
+| P3.12 | Homebrew cask formula | TBD |
+| P3.13 | Window close → hide to tray (app keeps running) | TBD |
+
+**Bugs fixed during P3 implementation (2026-03-18):**
+- **Critical**: WAV normalization bug — 16-bit samples divided by i32::MAX made audio 65,000x too quiet for whisper. Fixed by dividing by actual bit-depth max.
+- Separate stop_flag from recording state (inverted semantics caused immediate exit)
+- macOS tmux users get silence (tmux server doesn't inherit terminal's mic permission)
 
 **Exit criteria**: Install via `brew install --cask minutes` → app sits in menu bar → suggests recording → produces searchable meeting memory.
 

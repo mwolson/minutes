@@ -58,11 +58,16 @@
 | P2b.6 | 10/10 | meeting-analyst agent (cross-meeting intelligence). |
 | P2b.7-8 | 10/10 | PostToolUse hook (auto-tag with git repo). SessionStart removed (context bloat). |
 
-## Phase 3: Tauri Menu Bar App — SCAFFOLD COMPLETE
+## Phase 3: Tauri Desktop App — FUNCTIONAL
 | Bead | Score | Summary |
 |------|-------|---------|
 | P3.1 | 10/10 | Tauri v2 scaffold. System tray menu. Compiles clean. |
-| P3.4-5 | 8/10 | Dark-mode web UI. Status indicator. Meeting list + search. |
+| P3.2 | 10/10 | Main app window: meeting list, search, recording controls, date grouping. |
+| P3.3 | 10/10 | Audio visualizer: real-time RMS level bars during recording. |
+| P3.4 | 10/10 | Note taking: inline quick-note during recording + standalone popup window. |
+| P3.5 | 10/10 | Tray state: red dot icon when recording, menu items gray out appropriately. |
+| P3.6 | 10/10 | macOS entitlements: mic permission via Info.plist + entitlements.plist. |
+| P3.7 | 10/10 | .app bundle: `cargo tauri build --bundles app` produces Minutes.app. |
 
 ## Infrastructure
 | Item | Status |
@@ -76,20 +81,31 @@
 | Homebrew | brew tap silverstein/tap && brew install minutes |
 | CI | GitHub Actions (local commit, needs workflow-scoped push) |
 
+## Bugs Fixed (2026-03-18 session)
+| Bug | Impact | Fix |
+|-----|--------|-----|
+| WAV normalization: 16-bit samples divided by i32::MAX | Whisper saw silence (65,000x too quiet) | Divide by actual bit-depth max in transcribe.rs |
+| No mic permission in Tauri app | Recording captured all zeros | Added Info.plist + entitlements.plist |
+| Duplicate tray icons | Two icons in menu bar | Removed trayIcon from tauri.conf.json, use TrayIconBuilder only |
+| Stop flag inverted | Recording exited immediately | Separate stop_flag AtomicBool from recording state |
+| Whisper disabled in Tauri build | Got placeholder text instead of transcription | Removed default-features = false from Cargo.toml |
+| min_words threshold too high (10) | Short recordings marked no-speech despite valid transcript | Lowered to 3 |
+
 ## Remaining (nice-to-haves for future sessions)
 - P1b.2: Speaker-to-name mapping (calendar attendees → speaker labels)
 - P1b.5: Calendar integration (ical file parsing)
-- P3.2-3: Calendar polling + meeting suggestion notifications
-- P3.6: Auto-start on login (plist exists, needs `minutes install-watcher` CLI command)
-- P3.7: First-run onboarding wizard
-- P3.8: Homebrew cask formula
+- Calendar polling + meeting suggestion notifications
+- Auto-start on login (plist exists, needs `minutes install-watcher` CLI command)
+- First-run onboarding wizard
+- Homebrew cask formula for Minutes.app
 - P2.7: MCPB packaging (needs spec research)
 - Phase 4: Cowork/Dispatch integration
 - P4a.3: Structured intent extraction (decisions/actions as queryable YAML frontmatter + MCP filter)
 - P4a.4: Decision consistency tracking (meeting-analyst flags contradictions and stale commitments)
 - Phase 4: Cross-meeting intelligence (remaining P4a tasks)
-- Real tray icon (not placeholder)
 - Apple Shortcut (.shortcut file for iPhone voice memos)
+- Auto-gain calibration (measure ambient noise, adjust gain dynamically)
+- Window close → hide to tray (instead of quitting)
 
 ## Resume Instructions (for post-compaction)
 1. Read this file to see current status
