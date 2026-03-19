@@ -1285,6 +1285,12 @@
         </div>
         <button class="btn btn-secondary btn-sm toggle-btn" id="btn-toggle-notifications">On</button>
       </div>
+      <div class="about-controls">
+        <div class="about-controls-copy">
+          Play original Minutes cues for start, stop, complete, and error events.
+        </div>
+        <button class="btn btn-secondary btn-sm toggle-btn" id="btn-toggle-cues">On</button>
+      </div>
     </div>
   </div>
 
@@ -1408,6 +1414,7 @@
     const openExternalBtn = document.getElementById('btn-open-external');
     const aboutOverlay = document.getElementById('about-overlay');
     const notificationToggle = document.getElementById('btn-toggle-notifications');
+    const cueToggle = document.getElementById('btn-toggle-cues');
     const readinessOverlay = document.getElementById('readiness-overlay');
     const readinessButton = document.getElementById('btn-readiness');
     const readinessScroll = document.getElementById('readiness-scroll');
@@ -1426,9 +1433,17 @@
     let readinessItems = [];
     let recoveryItems = [];
     let notifyOnCompletion = true;
+    let playCaptureCues = true;
+    let lastOutputKey = null;
     let pollInterval = null;
     const NUM_BARS = 32;
     const audioViz = document.getElementById('audio-viz');
+    const cues = {
+      start: new Audio('audio/cue-start.wav'),
+      stop: new Audio('audio/cue-stop.wav'),
+      complete: new Audio('audio/cue-complete.wav'),
+      error: new Audio('audio/cue-error.wav'),
+    };
 
     // Create visualizer bars
     for (let i = 0; i < NUM_BARS; i++) {
@@ -1457,6 +1472,16 @@
       }
     }
 
+    function playCue(name) {
+      if (!playCaptureCues) return;
+      const cue = cues[name];
+      if (!cue) return;
+      try {
+        cue.currentTime = 0;
+        cue.play().catch(() => {});
+      } catch (_) {}
+    }
+
     // ── Status polling ──
     async function checkStatus() {
       try {
@@ -1477,7 +1502,10 @@
           updateViz(status.audioLevel || 0);
 
           // Speed up polling when recording starts
-          if (!wasRecording && !wasProcessing) startFastPoll();
+          if (!wasRecording && !wasProcessing) {
+            startFastPoll();
+            playCue('start');
+          }
         } else if (isProcessing) {
           statusPill.className = 'status-pill processing';
           statusPill.textContent = 'processing';
@@ -1486,7 +1514,12 @@
           footer.style.display = 'none';
           processingStage.textContent = status.processingStage || 'Preparing transcript...';
 
-          if (!wasRecording && !wasProcessing) startFastPoll();
+          if (!wasRecording && !wasProcessing) {
+            startFastPoll();
+          }
+          if (wasRecording) {
+            playCue('stop');
+          }
         } else {
           statusPill.className = 'status-pill';
           statusPill.textContent = 'idle';
@@ -1519,10 +1552,16 @@
       latestOutput = notice || null;
       if (!notice) {
         outputNotice.classList.remove('active', 'capture');
+        lastOutputKey = null;
         return;
       }
 
       const isCapture = notice.kind === 'preserved-capture';
+      const nextKey = `${notice.kind}:${notice.path}`;
+      if (nextKey !== lastOutputKey) {
+        playCue(isCapture ? 'error' : 'complete');
+        lastOutputKey = nextKey;
+      }
       outputNotice.classList.toggle('capture', isCapture);
       outputNotice.classList.add('active');
       outputNoticeIcon.textContent = isCapture ? '!' : '✓';
@@ -1538,6 +1577,14 @@
       notificationToggle.classList.toggle('btn-primary', enabled);
       notificationToggle.classList.toggle('btn-secondary', !enabled);
       localStorage.setItem('minutes.notifyOnCompletion', enabled ? 'true' : 'false');
+    }
+
+    function setCueToggle(enabled) {
+      playCaptureCues = enabled;
+      cueToggle.textContent = enabled ? 'On' : 'Off';
+      cueToggle.classList.toggle('btn-primary', enabled);
+      cueToggle.classList.toggle('btn-secondary', !enabled);
+      localStorage.setItem('minutes.playCaptureCues', enabled ? 'true' : 'false');
     }
 
     function closeReadiness() {
@@ -1756,6 +1803,20 @@
     document.getElementById('btn-readiness-close').addEventListener('click', closeReadiness);
     readinessOverlay.addEventListener('click', (e) => {
       if (e.target === readinessOverlay) closeReadiness();
+    });
+
+    notificationToggle.addEventListener('click', async () => {
+      const next = !notifyOnCompletion;
+      try {
+        await invoke('cmd_set_completion_notifications', { enabled: next });
+        setNotificationToggle(next);
+      } catch (e) {
+        console.error('Set notifications:', e);
+      }
+    });
+
+    cueToggle.addEventListener('click', () => {
+      setCueToggle(!playCaptureCues);
     });
 
     recoveryButton.addEventListener('click', () => {
@@ -2250,6 +2311,12 @@
       setNotificationToggle(false);
     } else {
       setNotificationToggle(true);
+    }
+    const storedCues = localStorage.getItem('minutes.playCaptureCues');
+    if (storedCues === 'false') {
+      setCueToggle(false);
+    } else {
+      setCueToggle(true);
     }
     invoke('cmd_set_completion_notifications', { enabled: notifyOnCompletion }).catch((e) => {
       console.error('Init notifications:', e);
