@@ -674,62 +674,11 @@
     </div>
   </div>
 
-  <!-- Onboarding overlay (shown on first run when no whisper model) -->
-  <div class="onboarding" id="onboarding" style="display: none;">
-    <div class="onboarding-content">
-      <div class="onboarding-icon">🎙</div>
-      <h2>Welcome to Minutes</h2>
-      <p class="onboarding-sub">Let's get you set up. This takes about 30 seconds.</p>
-
-      <div class="onboarding-steps">
-        <div class="onboarding-step" id="step-model">
-          <div class="step-header">
-            <span class="step-num">1</span>
-            <span class="step-title">Download speech model</span>
-            <span class="step-status" id="step-model-status"></span>
-          </div>
-          <div class="step-body" id="step-model-body">
-            <p>Choose a model size:</p>
-            <div class="model-options">
-              <button class="btn btn-secondary btn-sm model-btn" data-model="tiny">Tiny (75 MB, fast)</button>
-              <button class="btn btn-primary btn-sm model-btn" data-model="base">Base (141 MB, recommended)</button>
-              <button class="btn btn-secondary btn-sm model-btn" data-model="small">Small (466 MB, best accuracy)</button>
-            </div>
-            <div class="download-progress" id="download-progress" style="display: none;">
-              <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-              <span class="progress-text" id="progress-text">Downloading...</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="onboarding-step disabled" id="step-ready">
-          <div class="step-header">
-            <span class="step-num">2</span>
-            <span class="step-title">Ready to go</span>
-          </div>
-          <div class="step-body">
-            <p>Record meetings, take voice memos, and search everything with AI.</p>
-            <button class="btn btn-primary" id="btn-finish-setup" disabled>Start Using Minutes</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <style>
-    .onboarding {
-      position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
     .onboarding-content {
-      max-width: 400px;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
       text-align: center;
     }
 
@@ -844,6 +793,7 @@
     let currentMeetingPath = null;
     let currentMeetingDetail = null;
     let activeSearchQuery = '';
+    let currentSetup = null;
     let pollInterval = null;
     const NUM_BARS = 32;
     const audioViz = document.getElementById('audio-viz');
@@ -1152,12 +1102,20 @@
       meetingsScroll.replaceChildren();
 
       if (!meetings || meetings.length === 0) {
-        const empty = document.createElement('div');
-        empty.className = 'empty-state';
-        empty.innerHTML = '<div class="icon">🎙</div><div class="title">No meetings yet</div><div class="sub">Start a recording or watch ~/.minutes/inbox/ for new audio files</div>';
-        meetingsScroll.appendChild(empty);
+        if (currentSetup?.needsSetup) {
+          footer.style.display = 'none';
+          renderSetupEmptyState();
+        } else {
+          footer.style.display = '';
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.innerHTML = '<div class="icon">🎙</div><div class="title">No meetings yet</div><div class="sub">Start a recording or watch ~/.minutes/inbox/ for new audio files</div>';
+          meetingsScroll.appendChild(empty);
+        }
         return;
       }
+
+      footer.style.display = '';
 
       const groups = groupByDate(meetings);
       for (const [label, items] of Object.entries(groups)) {
@@ -1242,25 +1200,22 @@
     // ── Onboarding ──
     async function checkSetup() {
       try {
-        const setup = await invoke('cmd_needs_setup');
-        if (setup.needsSetup) {
-          document.getElementById('onboarding').style.display = 'flex';
-          setupOnboarding();
-        }
+        currentSetup = await invoke('cmd_needs_setup');
+        loadMeetings();
       } catch (e) {
         console.error('Setup check:', e);
       }
     }
 
-    function setupOnboarding() {
-      document.querySelectorAll('.model-btn').forEach(btn => {
+    function setupOnboarding(root) {
+      root.querySelectorAll('.model-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
           const model = btn.dataset.model;
-          document.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
+          root.querySelectorAll('.model-btn').forEach(b => b.disabled = true);
 
-          const progress = document.getElementById('download-progress');
-          const fill = document.getElementById('progress-fill');
-          const text = document.getElementById('progress-text');
+          const progress = root.querySelector('.download-progress');
+          const fill = root.querySelector('.progress-fill');
+          const text = root.querySelector('.progress-text');
           progress.style.display = 'block';
 
           // Animate progress (curl doesn't give us real progress via invoke)
@@ -1278,26 +1233,70 @@
             fill.style.width = '100%';
             text.textContent = result;
 
-            document.getElementById('step-model').classList.add('done');
-            document.getElementById('step-model-status').textContent = 'Done';
-            document.getElementById('step-model-body').style.display = 'none';
+            root.querySelector('#step-model').classList.add('done');
+            root.querySelector('#step-model-status').textContent = 'Done';
+            root.querySelector('#step-model-body').style.display = 'none';
 
-            document.getElementById('step-ready').classList.remove('disabled');
-            document.getElementById('btn-finish-setup').disabled = false;
+            root.querySelector('#step-ready').classList.remove('disabled');
+            root.querySelector('#btn-finish-setup').disabled = false;
           } catch (e) {
             clearInterval(progressTimer);
             fill.style.width = '0%';
             fill.style.background = 'var(--red)';
             text.textContent = `Error: ${e}`;
-            document.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
+            root.querySelectorAll('.model-btn').forEach(b => b.disabled = false);
           }
         });
       });
 
-      document.getElementById('btn-finish-setup').addEventListener('click', () => {
-        document.getElementById('onboarding').style.display = 'none';
+      root.querySelector('#btn-finish-setup').addEventListener('click', () => {
+        currentSetup = { ...currentSetup, needsSetup: false };
         loadMeetings();
       });
+    }
+
+    function renderSetupEmptyState() {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = `
+        <div class="onboarding-content">
+          <div class="onboarding-icon">🎙</div>
+          <h2>Welcome to Minutes</h2>
+          <p class="onboarding-sub">Set up local transcription here, then this view becomes your meeting list.</p>
+          <div class="onboarding-steps">
+            <div class="onboarding-step" id="step-model">
+              <div class="step-header">
+                <span class="step-num">1</span>
+                <span class="step-title">Download speech model</span>
+                <span class="step-status" id="step-model-status"></span>
+              </div>
+              <div class="step-body" id="step-model-body">
+                <p>Choose a model size:</p>
+                <div class="model-options">
+                  <button class="btn btn-secondary btn-sm model-btn" data-model="tiny">Tiny (75 MB, fast)</button>
+                  <button class="btn btn-primary btn-sm model-btn" data-model="base">Base (141 MB, recommended)</button>
+                  <button class="btn btn-secondary btn-sm model-btn" data-model="small">Small (466 MB, best accuracy)</button>
+                </div>
+                <div class="download-progress" style="display: none;">
+                  <div class="progress-bar"><div class="progress-fill"></div></div>
+                  <span class="progress-text">Downloading...</span>
+                </div>
+              </div>
+            </div>
+            <div class="onboarding-step disabled" id="step-ready">
+              <div class="step-header">
+                <span class="step-num">2</span>
+                <span class="step-title">Ready to go</span>
+              </div>
+              <div class="step-body">
+                <p>Record meetings, take voice memos, and search everything with AI.</p>
+                <button class="btn btn-primary" id="btn-finish-setup" disabled>Start Using Minutes</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      meetingsScroll.appendChild(empty);
+      setupOnboarding(empty);
     }
 
     // ── Upcoming meetings ──
@@ -1352,7 +1351,6 @@
     // ── Init ──
     checkSetup();
     checkStatus();
-    loadMeetings();
     checkUpcoming();
     setInterval(() => { if (!pollInterval) checkStatus(); }, 2000);
     setInterval(checkUpcoming, 60000); // Check calendar every minute
