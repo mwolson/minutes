@@ -245,7 +245,21 @@ fn cmd_record(title: Option<String>, context: Option<String>, config: &Config) -
 
     // Run pipeline on the captured audio
     let content_type = ContentType::Meeting;
-    let result = minutes_core::process(&wav_path, content_type, title.as_deref(), config)?;
+    let result = minutes_core::pipeline::process_with_progress(
+        &wav_path,
+        content_type,
+        title.as_deref(),
+        config,
+        |stage| {
+            let label = match stage {
+                minutes_core::pipeline::PipelineStage::Transcribing => "Transcribing audio",
+                minutes_core::pipeline::PipelineStage::Diarizing => "Separating speakers",
+                minutes_core::pipeline::PipelineStage::Summarizing => "Generating summary",
+                minutes_core::pipeline::PipelineStage::Saving => "Saving meeting",
+            };
+            let _ = minutes_core::pid::set_processing_status(Some(label));
+        },
+    )?;
 
     // Write result file for `minutes stop` to read
     let result_json = serde_json::to_string_pretty(&serde_json::json!({
@@ -258,6 +272,7 @@ fn cmd_record(title: Option<String>, context: Option<String>, config: &Config) -
 
     // Clean up
     minutes_core::pid::remove().ok();
+    minutes_core::pid::clear_processing_status().ok();
     minutes_core::notes::cleanup(); // Remove notes + context + recording-start files
     if wav_path.exists() {
         std::fs::remove_file(&wav_path).ok();

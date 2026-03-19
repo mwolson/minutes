@@ -34,6 +34,57 @@ pub fn last_result_path() -> PathBuf {
     Config::minutes_dir().join("last-result.json")
 }
 
+/// Path to the processing status JSON (`~/.minutes/processing-status.json`).
+pub fn processing_status_path() -> PathBuf {
+    Config::minutes_dir().join("processing-status.json")
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ProcessingStatus {
+    pub processing: bool,
+    pub stage: Option<String>,
+}
+
+pub fn set_processing_status(stage: Option<&str>) -> std::io::Result<()> {
+    let path = processing_status_path();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let status = ProcessingStatus {
+        processing: true,
+        stage: stage.map(String::from),
+    };
+    let json = serde_json::to_string(&status)?;
+    fs::write(path, json)
+}
+
+pub fn clear_processing_status() -> std::io::Result<()> {
+    let path = processing_status_path();
+    if path.exists() {
+        fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
+pub fn read_processing_status() -> ProcessingStatus {
+    let path = processing_status_path();
+    if !path.exists() {
+        return ProcessingStatus {
+            processing: false,
+            stage: None,
+        };
+    }
+
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|s| serde_json::from_str::<ProcessingStatus>(&s).ok())
+        .unwrap_or(ProcessingStatus {
+            processing: false,
+            stage: None,
+        })
+}
+
 /// Check if a recording is currently in progress.
 /// Returns Ok(Some(pid)) if recording, Ok(None) if not.
 /// Cleans up stale PID files automatically.
@@ -138,6 +189,8 @@ pub fn is_process_alive(pid: u32) -> bool {
 #[derive(Debug, serde::Serialize)]
 pub struct RecordingStatus {
     pub recording: bool,
+    pub processing: bool,
+    pub processing_stage: Option<String>,
     pub pid: Option<u32>,
     pub duration_secs: Option<f64>,
     pub wav_path: Option<String>,
@@ -145,6 +198,7 @@ pub struct RecordingStatus {
 
 /// Get current recording status.
 pub fn status() -> RecordingStatus {
+    let processing = read_processing_status();
     match check_recording() {
         Ok(Some(pid)) => {
             let wav = current_wav_path();
@@ -161,6 +215,8 @@ pub fn status() -> RecordingStatus {
 
             RecordingStatus {
                 recording: true,
+                processing: false,
+                processing_stage: None,
                 pid: Some(pid),
                 // Duration is approximate: time since WAV was last modified.
                 // The record process writes continuously, so this is close.
@@ -170,6 +226,8 @@ pub fn status() -> RecordingStatus {
         }
         _ => RecordingStatus {
             recording: false,
+            processing: processing.processing,
+            processing_stage: processing.stage,
             pid: None,
             duration_secs: None,
             wav_path: None,
@@ -189,5 +247,14 @@ mod tests {
     fn is_process_alive_returns_false_for_dead_pid() {
         // PID 99999999 almost certainly doesn't exist
         assert!(!is_process_alive(99_999_999));
+    }
+
+    #[test]
+    fn processing_status_round_trip() {
+        set_processing_status(Some("Transcribing audio")).unwrap();
+        let status = read_processing_status();
+        assert!(status.processing);
+        assert_eq!(status.stage.as_deref(), Some("Transcribing audio"));
+        clear_processing_status().unwrap();
     }
 }

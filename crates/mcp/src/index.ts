@@ -235,7 +235,9 @@ server.tool(
     const status = parseJsonOutput(stdout);
     const text = status.recording
       ? `Recording in progress (PID: ${status.pid})`
-      : "No recording in progress.";
+      : status.processing
+        ? `Processing in progress${status.processing_stage ? `: ${status.processing_stage}` : "."}`
+        : "No recording in progress.";
     return { content: [{ type: "text" as const, text }] };
   }
 );

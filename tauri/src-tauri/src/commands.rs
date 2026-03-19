@@ -477,6 +477,7 @@ pub fn start_recording(
     processing.store(false, Ordering::Relaxed);
     set_processing_stage(&processing_stage, None);
     set_latest_output(&latest_output, None);
+    minutes_core::pid::clear_processing_status().ok();
 
     let config = Config::load();
     let wav_path = minutes_core::pid::current_wav_path();
@@ -503,7 +504,11 @@ pub fn start_recording(
                 ContentType::Meeting,
                 Some(&title),
                 &config,
-                |stage| set_processing_stage(&processing_stage, Some(stage_label(stage))),
+                |stage| {
+                    let label = stage_label(stage);
+                    set_processing_stage(&processing_stage, Some(label));
+                    let _ = minutes_core::pid::set_processing_status(Some(label));
+                },
             ) {
                 Ok(result) => {
                     remove_current_wav = true;
@@ -590,6 +595,7 @@ pub fn start_recording(
     }
     processing.store(false, Ordering::Relaxed);
     set_processing_stage(&processing_stage, None);
+    minutes_core::pid::clear_processing_status().ok();
     recording.store(false, Ordering::Relaxed);
 }
 
@@ -638,13 +644,15 @@ pub fn cmd_add_note(text: String) -> Result<String, String> {
 #[tauri::command]
 pub fn cmd_status(state: tauri::State<AppState>) -> serde_json::Value {
     let recording = state.recording.load(Ordering::Relaxed);
-    let processing = state.processing.load(Ordering::Relaxed);
+    let shared_processing = minutes_core::pid::read_processing_status();
+    let processing = state.processing.load(Ordering::Relaxed) || shared_processing.processing;
     let status = minutes_core::pid::status();
     let processing_stage = state
         .processing_stage
         .lock()
         .ok()
-        .and_then(|stage| stage.clone());
+        .and_then(|stage| stage.clone())
+        .or(shared_processing.stage);
     let latest_output = state
         .latest_output
         .lock()
