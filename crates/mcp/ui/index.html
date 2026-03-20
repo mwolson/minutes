@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minutes Dashboard</title>
+  <link rel="stylesheet" href="./src/mcp-app.css" />
+</head>
+<body>
+  <div class="main">
+    <!-- Loading -->
+    <div id="loading">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <span id="loading-text">Connecting...</span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error" style="display:none">
+      <div class="error-icon">!</div>
+      <div id="error-message"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" style="display:none">
+      <div class="stats-bar" id="stats-bar"></div>
+      <div class="dashboard-body">
+        <div class="meetings-list" id="meetings-list"></div>
+        <div class="actions-sidebar" id="actions-sidebar"></div>
+      </div>
+    </div>
+
+    <!-- Detail -->
+    <div id="detail" style="display:none">
+      <button class="back-btn" id="back-btn">&larr; Back to list</button>
+      <div class="detail-header" id="detail-header"></div>
+      <div class="detail-body">
+        <div class="detail-content" id="detail-content"></div>
+        <div class="detail-panels" id="detail-panels"></div>
+      </div>
+    </div>
+
+    <!-- Person -->
+    <div id="person" style="display:none">
+      <div class="person-header" id="person-header"></div>
+      <div class="person-body" id="person-body"></div>
+    </div>
+
+    <!-- Report -->
+    <div id="report" style="display:none">
+      <div class="report-header" id="report-header"></div>
+      <div class="report-body" id="report-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/mcp-app.ts"></script>
+</body>
+</html>

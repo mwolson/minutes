@@ -38,9 +38,10 @@ open target/release/bundle/macos/Minutes.app   # Launch app
 **IMPORTANT**: After any code change, you must rebuild ALL affected targets:
 - CLI changes: `cargo build --release -p minutes-cli && cp target/release/minutes ~/.local/bin/minutes`
 - Tauri changes: `cargo tauri build --bundles app` then relaunch Minutes.app
-- MCP server changes: `cd crates/mcp && npm run build` (then restart MCP client sessions)
+- MCP server changes: `cd crates/mcp && npm run build` (compiles TS server + builds UI, then restart MCP client sessions)
+- MCP App UI only: `cd crates/mcp && npm run build:ui` (rebuild just the dashboard HTML)
 - All Rust + app: `./scripts/build.sh` (add `--install` to copy .app to /Applications)
-- **Don't forget the MCP server** — it's TypeScript, not Rust. `./scripts/build.sh` does NOT rebuild it. Always run `cd crates/mcp && npm run build` after touching `crates/mcp/src/index.ts`.
+- **Don't forget the MCP server** — it's TypeScript, not Rust. `./scripts/build.sh` does NOT rebuild it. Always run `cd crates/mcp && npm run build` after touching `crates/mcp/src/index.ts` or `crates/mcp/ui/`.
 
 ## Project Structure
 
@@ -68,7 +69,8 @@ minutes/
 │   │   └── error.rs           # Per-module error types (thiserror)
 │   ├── cli/                   # CLI binary — 15 commands
 │   ├── reader/                # Lightweight read-only meeting parser (no audio deps)
-│   └── mcp/                   # MCP server — 8 tools + 5 resources for Claude Desktop
+│   └── mcp/                   # MCP server — 12 tools + 6 resources + MCP App dashboard
+│       └── ui/                # Interactive dashboard (vanilla TS, builds to single-file HTML)
 ├── tauri/                     # Tauri v2 menu bar app + singleton AI Assistant
 ├── .claude/plugins/minutes/   # Claude Code plugin — 11 skills + 1 agent + 2 hooks
 └── tests/integration/         # Integration tests (including real whisper tests)
@@ -89,8 +91,8 @@ cargo test -p minutes-core                          # Full (needs tiny model)
 cargo clippy --all --no-default-features -- -D warnings
 cargo fmt --all -- --check
 
-# MCP server
-cd crates/mcp && npm install && npx tsc
+# MCP server (TS server + interactive dashboard UI)
+cd crates/mcp && npm install && npm run build       # tsc + vite single-file build
 node test/mcp_tools_test.mjs                        # 8 MCP integration tests
 ```
 

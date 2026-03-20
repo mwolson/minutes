@@ -18,6 +18,11 @@
 
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  registerAppTool,
+  registerAppResource,
+  RESOURCE_MIME_TYPE,
+} from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import { execFile, spawn } from "child_process";
 import { promisify } from "util";
@@ -26,6 +31,8 @@ import { readFile } from "fs/promises";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
+
+const UI_RESOURCE_URI = "ui://minutes/dashboard";
 
 const execFileAsync = promisify(execFile);
 
@@ -153,6 +160,26 @@ const server = new McpServer({
   version: "0.1.0",
 });
 
+// ── UI Resource: MCP App dashboard ──────────────────────────
+
+registerAppResource(
+  server,
+  "Minutes Dashboard",
+  UI_RESOURCE_URI,
+  { description: "Interactive meeting dashboard and detail viewer" },
+  async () => {
+    const htmlPath = join(__dirname, "..", "dist-ui", "index.html");
+    const html = await readFile(htmlPath, "utf-8");
+    return {
+      contents: [{
+        uri: UI_RESOURCE_URI,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: html,
+      }],
+    };
+  }
+);
+
 // ── Tool: start_recording ───────────────────────────────────
 
 server.tool(
@@ -258,54 +285,78 @@ server.tool(
 
 // ── Tool: list_meetings ─────────────────────────────────────
 
-server.tool(
+registerAppTool(
+  server,
   "list_meetings",
-  "List recent meetings and voice memos.",
   {
-    limit: z.number().optional().default(10).describe("Maximum results"),
-    type: z.enum(["meeting", "memo"]).optional().describe("Filter by type"),
+    description: "List recent meetings and voice memos.",
+    inputSchema: {
+      limit: z.number().optional().default(10).describe("Maximum results"),
+      type: z.enum(["meeting", "memo"]).optional().describe("Filter by type"),
+    },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ limit, type: contentType }) => {
     const args = ["list", "--limit", String(limit)];
     if (contentType) args.push("-t", contentType);
 
-    const { stdout, stderr } = await runMinutes(args);
-    const meetings = parseJsonOutput(stdout);
+    // Fetch meetings and action items in parallel
+    const [meetingsResult, actionsResult] = await Promise.all([
+      runMinutes(args),
+      runMinutes(["search", "", "--intents-only", "--intent-kind", "action-item", "--limit", "20"]).catch(() => ({ stdout: "[]", stderr: "" })),
+    ]);
+
+    const meetings = parseJsonOutput(meetingsResult.stdout);
+    let actions: any[] = [];
+    const parsedActions = parseJsonOutput(actionsResult.stdout);
+    if (Array.isArray(parsedActions)) actions = parsedActions;
 
     if (Array.isArray(meetings) && meetings.length === 0) {
-      return { content: [{ type: "text" as const, text: "No meetings or memos found." }] };
+      return {
+        content: [{ type: "text" as const, text: "No meetings or memos found." }],
+        structuredContent: { meetings: [], actions, view: "dashboard" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "dashboard" },
+      };
     }
 
     const text = Array.isArray(meetings)
       ? meetings
           .map((m: any) => `${m.date} — ${m.title} [${m.content_type}]\n  ${m.path}`)
           .join("\n\n")
-      : (stderr || stdout);
+      : (meetingsResult.stderr || meetingsResult.stdout);
 
-    return { content: [{ type: "text" as const, text }] };
+    return {
+      content: [{ type: "text" as const, text }],
+      structuredContent: { meetings: Array.isArray(meetings) ? meetings : [], actions, view: "dashboard" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "dashboard" },
+    };
   }
 );
 
 // ── Tool: search_meetings ───────────────────────────────────
 
-server.tool(
+registerAppTool(
+  server,
   "search_meetings",
-  "Search meeting transcripts and voice memos.",
   {
-    query: z.string().describe("Text to search for"),
-    type: z.enum(["meeting", "memo"]).optional().describe("Filter by type"),
-    since: z.string().optional().describe("Only results after this date (ISO)"),
-    limit: z.number().optional().default(10).describe("Maximum results"),
-    intent_kind: z
-      .enum(["action-item", "decision", "open-question", "commitment"])
-      .optional()
-      .describe("Filter structured intents by kind"),
-    owner: z.string().optional().describe("Filter structured intents by owner / person"),
-    intents_only: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe("Return structured intent records instead of transcript snippets"),
+    description: "Search meeting transcripts and voice memos.",
+    inputSchema: {
+      query: z.string().describe("Text to search for"),
+      type: z.enum(["meeting", "memo"]).optional().describe("Filter by type"),
+      since: z.string().optional().describe("Only results after this date (ISO)"),
+      limit: z.number().optional().default(10).describe("Maximum results"),
+      intent_kind: z
+        .enum(["action-item", "decision", "open-question", "commitment"])
+        .optional()
+        .describe("Filter structured intents by kind"),
+      owner: z.string().optional().describe("Filter structured intents by owner / person"),
+      intents_only: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe("Return structured intent records instead of transcript snippets"),
+    },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ query, type: contentType, since, limit, intent_kind, owner, intents_only }) => {
     const args = ["search", query, "--limit", String(limit)];
@@ -321,6 +372,8 @@ server.tool(
     if (Array.isArray(results) && results.length === 0) {
       return {
         content: [{ type: "text" as const, text: `No results found for "${query}".` }],
+        structuredContent: { meetings: [], actions: [], view: "dashboard" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "dashboard" },
       };
     }
 
@@ -340,22 +393,41 @@ server.tool(
             .join("\n\n")
       : (stderr || stdout);
 
-    return { content: [{ type: "text" as const, text }] };
+    // Map search results to meeting-like objects for the dashboard view
+    const meetings = Array.isArray(results)
+      ? results.map((r: any) => ({
+          date: r.date,
+          title: r.title,
+          content_type: r.content_type,
+          path: r.path,
+          snippet: r.snippet || (intents_only ? `${r.kind}: ${r.what}` : undefined),
+        }))
+      : [];
+
+    return {
+      content: [{ type: "text" as const, text }],
+      structuredContent: { meetings, actions: [], view: "dashboard" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "dashboard" },
+    };
   }
 );
 
 // ── Tool: consistency_report ───────────────────────────────
 
-server.tool(
+registerAppTool(
+  server,
   "consistency_report",
-  "Flag conflicting decisions and stale commitments across meetings using structured intent data.",
   {
-    owner: z.string().optional().describe("Filter stale commitments by owner / person"),
-    stale_after_days: z
-      .number()
-      .optional()
-      .default(7)
-      .describe("Flag commitments this many days old or older"),
+    description: "Flag conflicting decisions and stale commitments across meetings using structured intent data.",
+    inputSchema: {
+      owner: z.string().optional().describe("Filter stale commitments by owner / person"),
+      stale_after_days: z
+        .number()
+        .optional()
+        .default(7)
+        .describe("Flag commitments this many days old or older"),
+    },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ owner, stale_after_days }) => {
     const args = ["consistency", "--stale-after-days", String(stale_after_days)];
@@ -376,7 +448,11 @@ server.tool(
       : [];
 
     if (decisionConflicts.length === 0 && staleCommitments.length === 0) {
-      return { content: [{ type: "text" as const, text: "No consistency issues found." }] };
+      return {
+        content: [{ type: "text" as const, text: "No consistency issues found." }],
+        structuredContent: { decision_conflicts: [], stale_commitments: [], view: "report" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "report" },
+      };
     }
 
     const sections = [];
@@ -403,17 +479,25 @@ server.tool(
       );
     }
 
-    return { content: [{ type: "text" as const, text: sections.join("\n\n") }] };
+    return {
+      content: [{ type: "text" as const, text: sections.join("\n\n") }],
+      structuredContent: { decision_conflicts: decisionConflicts, stale_commitments: staleCommitments, view: "report" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "report" },
+    };
   }
 );
 
 // ── Tool: get_person_profile ───────────────────────────────
 
-server.tool(
+registerAppTool(
+  server,
   "get_person_profile",
-  "Build a first-pass profile for a person across meetings using structured intent data.",
   {
-    name: z.string().describe("Person / attendee name to profile"),
+    description: "Build a first-pass profile for a person across meetings using structured intent data.",
+    inputSchema: {
+      name: z.string().describe("Person / attendee name to profile"),
+    },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ name }) => {
     const { stdout, stderr } = await runMinutes(["person", name]);
@@ -430,7 +514,11 @@ server.tool(
       : [];
 
     if (topics.length === 0 && openIntents.length === 0 && recentMeetings.length === 0) {
-      return { content: [{ type: "text" as const, text: `No profile data found for ${name}.` }] };
+      return {
+        content: [{ type: "text" as const, text: `No profile data found for ${name}.` }],
+        structuredContent: { name, top_topics: [], open_intents: [], recent_meetings: [], view: "person" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
+      };
     }
 
     const sections = [];
@@ -467,6 +555,8 @@ server.tool(
           text: `Profile for ${profile.name}:\n\n${sections.join("\n\n")}`,
         },
       ],
+      structuredContent: { ...profile, view: "person" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
     };
   }
 );
@@ -563,17 +653,25 @@ server.tool(
 
 // ── Tool: get_meeting ───────────────────────────────────────
 
-server.tool(
+registerAppTool(
+  server,
   "get_meeting",
-  "Get the full transcript and details of a specific meeting or memo.",
   {
-    path: z.string().describe("Path to the meeting markdown file"),
+    description: "Get the full transcript and details of a specific meeting or memo.",
+    inputSchema: {
+      path: z.string().describe("Path to the meeting markdown file"),
+    },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ path: filePath }) => {
     try {
       const resolved = validatePathInDirectory(filePath, join(homedir(), "meetings"), [".md"]);
       const content = await readFile(resolved, "utf-8");
-      return { content: [{ type: "text" as const, text: content }] };
+      return {
+        content: [{ type: "text" as const, text: content }],
+        structuredContent: { path: resolved, view: "detail" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "detail", path: resolved },
+      };
     } catch (error: any) {
       return {
         content: [{ type: "text" as const, text: `Could not read: ${error.message}` }],
