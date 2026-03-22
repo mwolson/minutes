@@ -201,6 +201,16 @@ enum Commands {
         lines: usize,
     },
 
+    /// Check system health (model, mic, calendar, disk, watcher)
+    Health {
+        /// Output raw JSON instead of formatted table
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Run a demo recording to verify the pipeline works (uses bundled audio, no mic needed)
+    Demo,
+
     /// Output the JSON Schema for the meeting frontmatter format
     Schema,
 
@@ -356,6 +366,8 @@ fn main() -> Result<()> {
             }
         }
         Commands::Logs { errors, lines } => cmd_logs(errors, lines),
+        Commands::Health { json } => cmd_health(json),
+        Commands::Demo => cmd_demo(&config),
         Commands::Schema => cmd_schema(),
         Commands::Get { slug } => cmd_get(&slug, &config),
         Commands::Events { limit, since } => cmd_events(limit, since, &config),
@@ -1925,4 +1937,100 @@ fn cmd_vault_sync(config: &Config) -> Result<()> {
         }
     }
     Ok(())
+}
+
+// ──────────────────────────────────────────────────────────────
+// minutes health — system readiness diagnostics
+// ──────────────────────────────────────────────────────────────
+
+fn cmd_health(json: bool) -> Result<()> {
+    let config = Config::load();
+    let items = minutes_core::health::check_all(&config);
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&items)?);
+    } else {
+        let all_ready = items.iter().all(|i| i.state == "ready");
+        for item in &items {
+            let icon = match item.state.as_str() {
+                "ready" => "\u{2713}", // ✓
+                "attention" => "!",
+                _ => "?",
+            };
+            let opt = if item.optional { " (optional)" } else { "" };
+            eprintln!("  {} {}{}", icon, item.label, opt);
+            eprintln!("    {}", item.detail);
+        }
+        if all_ready {
+            eprintln!("\nAll systems ready.");
+        } else {
+            let attention_count = items.iter().filter(|i| i.state == "attention").count();
+            eprintln!(
+                "\n{} item{} need attention.",
+                attention_count,
+                if attention_count == 1 { "" } else { "s" }
+            );
+        }
+    }
+
+    Ok(())
+}
+
+// ──────────────────────────────────────────────────────────────
+// minutes demo — deterministic pipeline demo with bundled audio
+// ──────────────────────────────────────────────────────────────
+
+/// Bundled 3-second demo WAV (generated silence with a beep).
+/// If this file doesn't exist at build time, compilation fails — intentionally.
+const DEMO_WAV: &[u8] = include_bytes!("../../assets/demo.wav");
+
+fn cmd_demo(config: &Config) -> Result<()> {
+    // Ensure output directory exists
+    config.ensure_dirs()?;
+
+    // Write bundled WAV to temp file
+    let demo_dir = config.output_dir.join(".demo-temp");
+    std::fs::create_dir_all(&demo_dir)?;
+    let demo_path = demo_dir.join("demo.wav");
+    std::fs::write(&demo_path, DEMO_WAV)?;
+
+    eprintln!("Running demo pipeline...");
+    let result = minutes_core::pipeline::process_with_progress(
+        &demo_path,
+        ContentType::Memo,
+        Some("Minutes Demo"),
+        config,
+        |stage| {
+            let label = match stage {
+                minutes_core::pipeline::PipelineStage::Transcribing => "Transcribing demo audio",
+                minutes_core::pipeline::PipelineStage::Diarizing => "Analyzing speakers",
+                minutes_core::pipeline::PipelineStage::Summarizing => "Generating summary",
+                minutes_core::pipeline::PipelineStage::Saving => "Saving demo",
+            };
+            eprintln!("  {}", label);
+        },
+    );
+
+    // Clean up temp file
+    std::fs::remove_file(&demo_path).ok();
+    std::fs::remove_dir(&demo_dir).ok();
+
+    match result {
+        Ok(result) => {
+            eprintln!("\nDemo complete! Saved: {}", result.path.display());
+            let result_json = serde_json::json!({
+                "status": "done",
+                "file": result.path.display().to_string(),
+                "title": result.title,
+                "words": result.word_count,
+            });
+            println!("{}", serde_json::to_string_pretty(&result_json)?);
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("\nDemo failed: {}", e);
+            eprintln!("Run `minutes setup` to download the speech model first.");
+            Err(e.into())
+        }
+    }
 }

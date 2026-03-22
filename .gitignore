@@ -19,6 +19,9 @@ dist/
 *.mp3
 *.m4a
 
+# Exception: bundled demo asset (include_bytes! at compile time)
+!crates/assets/demo.wav
+
 # Whisper models (large, downloaded locally)
 models/
 

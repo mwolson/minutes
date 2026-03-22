@@ -52,7 +52,13 @@ pub fn extract_meeting_url(text: &str) -> Option<String> {
     }
 
     // Fallback: look for any https:// URL containing common meeting keywords
-    for keyword in &["zoom.us", "meet.google", "teams.microsoft", "webex.com", "facetime.apple"] {
+    for keyword in &[
+        "zoom.us",
+        "meet.google",
+        "teams.microsoft",
+        "webex.com",
+        "facetime.apple",
+    ] {
         if let Some(https_pos) = text.find("https://") {
             let url_text = &text[https_pos..];
             if url_text.contains(keyword) {
@@ -174,9 +180,7 @@ return output"#;
                 } else {
                     Vec::new()
                 };
-                let url = parts
-                    .get(4)
-                    .and_then(|loc| extract_meeting_url(loc.trim()));
+                let url = parts.get(4).and_then(|loc| extract_meeting_url(loc.trim()));
                 Some(CalendarEvent {
                     title: parts[0].trim().to_string(),
                     start: parts[1].trim().to_string(),
@@ -301,9 +305,7 @@ return output"#,
         .filter_map(|line| {
             let parts: Vec<&str> = line.splitn(4, sep).collect();
             if parts.len() >= 3 {
-                let url = parts
-                    .get(3)
-                    .and_then(|loc| extract_meeting_url(loc.trim()));
+                let url = parts.get(3).and_then(|loc| extract_meeting_url(loc.trim()));
                 Some(CalendarEvent {
                     title: parts[0].trim().to_string(),
                     start: parts[1].trim().to_string(),

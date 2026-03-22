@@ -1,6 +1,6 @@
 # minutes
 
-**Your AI remembers every conversation you've had.**
+**Your AI remembers every conversation you've had.** &nbsp; [useminutes.dev](https://useminutes.dev)
 
 Agents have run logs. Humans have conversations. **minutes** captures the human side — the decisions, the intent, the context that agents need but can't observe — and makes it queryable.
 
@@ -184,6 +184,13 @@ minutes list                                      # Recent recordings
 minutes research "pricing strategy"               # Search across all meetings
 minutes person "Alex"                              # Build a profile from meeting history
 minutes consistency                                # Flag contradicting decisions + stale commitments
+```
+
+### System diagnostics
+```bash
+minutes health                                   # Check model, mic, calendar, disk
+minutes health --json                            # Machine-readable output
+minutes demo                                     # Run a demo recording (no mic needed)
 ```
 
 ### Post-meeting annotations
