@@ -3568,10 +3568,13 @@
     loadHotkeySettings();
     checkSetup();
     checkStatus();
-    loadReadinessItems();
-    loadRecoveryItems();
-    checkUpcoming();
     setInterval(() => { if (!pollInterval) checkStatus(); }, 2000);
+    // Defer heavy checks (osascript calendar queries) so the UI is interactive immediately
+    setTimeout(() => {
+      loadReadinessItems();
+      loadRecoveryItems();
+      checkUpcoming();
+    }, 2000);
     setInterval(checkUpcoming, 60000);
 
     // Restore panel state from previous session
