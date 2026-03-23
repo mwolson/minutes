@@ -1,80 +1,96 @@
 # Contributing to Minutes
 
-Thanks for your interest in contributing to Minutes!
+Thanks for your interest in contributing! Minutes is a solo project that welcomes contributors — whether it's a bug fix, a feature, a docs improvement, or just filing an issue.
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/silverstein/minutes.git
 cd minutes
+
+# Rust (core engine + CLI)
+export CXXFLAGS="-I$(xcrun --show-sdk-path)/usr/include/c++/v1"  # macOS 26+
 cargo build
-cargo test
+cargo test -p minutes-core --no-default-features   # Fast (no whisper model)
+
+# TypeScript (MCP server + SDK)
+cd crates/sdk && npm install && npm test            # 30 unit tests
+cd ../mcp && npm install && npm run build           # MCP server
 ```
 
 ### Prerequisites
 
-- **Rust** (latest stable)
-- **cmake** (`brew install cmake`)
-- **Python 3** (for diarization via pyannote, optional)
-
-### macOS SDK Note
-
-On macOS 26 (Tahoe), you may need to set C++ include paths for whisper.cpp compilation:
-
-```bash
-export CXXFLAGS="-I$(xcrun --show-sdk-path)/usr/include/c++/v1"
-```
-
-### Running Tests
-
-```bash
-# Fast tests (no whisper model needed)
-cargo test -p minutes-core --no-default-features
-
-# Full tests (requires whisper model)
-minutes setup --model tiny
-cargo test
-```
+- **Rust** (latest stable) + **cmake** (`brew install cmake`)
+- **Node.js** 18+ (for MCP server and SDK)
+- **Python 3** (optional — only for diarization via pyannote)
 
 ## Architecture
 
 ```
-crates/core/src/    # Library — all logic lives here
-  capture.rs        # Audio capture (cpal)
-  transcribe.rs     # Whisper.cpp + symphonia format conversion
-  diarize.rs        # Pyannote subprocess
-  summarize.rs      # LLM summarization (Claude/OpenAI/Ollama)
-  pipeline.rs       # Orchestrates the pipeline
-  watch.rs          # Folder watcher
-  markdown.rs       # Output writer
-  search.rs         # Walk-dir search
-  config.rs         # TOML config with defaults
-  pid.rs            # PID file lifecycle
-  logging.rs        # Structured JSON logging
-  error.rs          # Per-module error types
-
-crates/cli/         # CLI binary — thin wrapper
-crates/mcp/         # MCP server for Claude Desktop
-tauri/              # Menu bar app (Tauri v2)
+crates/
+├── core/       Rust library — all audio/transcription logic
+├── cli/        CLI binary — thin wrapper around core
+├── reader/     Lightweight Rust meeting parser (no audio deps)
+├── sdk/        TypeScript SDK — minutes-sdk npm package
+│               (query meetings from any agent framework)
+├── mcp/        MCP server — imports from sdk, adds CLI integration
+│   └── ui/     Interactive dashboard (vanilla TS → single-file HTML)
+└── tauri/      Menu bar app (Tauri v2)
 ```
 
-The key design: `minutes-core` is a library crate shared by the CLI, MCP server, and Tauri app. All logic goes in core. The other crates are thin wrappers.
+**Key design:** `minutes-core` is shared by CLI, MCP server, and Tauri app. The TypeScript SDK (`minutes-sdk`) provides the same read-only capabilities for the JS/TS ecosystem.
+
+## Where to Contribute
+
+**Good first issues** are tagged — check the [issue tracker](https://github.com/silverstein/minutes/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+
+Some areas where help is especially welcome:
+- **Windows/Linux testing** — the core works cross-platform but edge cases remain
+- **MCP tools** — new read-only tools in the SDK (`crates/sdk/src/reader.ts`)
+- **CLI commands** — new query/reporting commands in `crates/cli/src/main.rs`
+- **Docs** — README, inline code comments, examples
 
 ## Adding a Feature
 
+### Rust (core/CLI)
 1. Implement in `crates/core/src/`
 2. Add error types to the module's error enum
 3. Write unit tests in the same file
 4. Wire into the CLI if user-facing
 5. Run `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
 
+### TypeScript (SDK/MCP)
+1. Add functionality to `crates/sdk/src/reader.ts`
+2. Add tests in `crates/sdk/src/reader.test.ts`
+3. Run `cd crates/sdk && npm test`
+4. If adding an MCP tool, wire it in `crates/mcp/src/index.ts`
+
+## Running Tests
+
+```bash
+# Rust — fast (no whisper model needed)
+cargo test -p minutes-core --no-default-features
+
+# Rust — full (requires: minutes setup --model tiny)
+cargo test
+
+# TypeScript SDK
+cd crates/sdk && npx vitest run
+
+# MCP integration
+cd crates/mcp && npm run build && node test/mcp_tools_test.mjs
+```
+
+124 tests total across Rust and TypeScript.
+
 ## Code Style
 
-- `cargo fmt` for formatting
+- `cargo fmt` for Rust formatting
 - `cargo clippy -- -D warnings` must pass
 - Per-module error enums (not `anyhow` in the library)
 - File permissions `0600` on all meeting output
 - Explicit > clever
+- `String.includes()` not regex for user-input search (special char safety)
 
 ## License
 

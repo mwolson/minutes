@@ -483,13 +483,18 @@
         brew install --cask silverstein/tap/minutes
         <div class="copied">Copied!</div>
       </div>
-      <div class="install-cmd" onclick="copyInstall(this, 'brew install silverstein/tap/minutes')">
+      <div class="install-cmd" onclick="copyInstall(this, 'brew tap silverstein/tap && brew install minutes')">
         <span class="label">CLI only</span>
-        brew install silverstein/tap/minutes
+        brew tap silverstein/tap && brew install minutes
+        <div class="copied">Copied!</div>
+      </div>
+      <div class="install-cmd" onclick="copyInstall(this, 'npx minutes-mcp')">
+        <span class="label">MCP server (no Rust needed)</span>
+        npx minutes-mcp
         <div class="copied">Copied!</div>
       </div>
     </div>
-    <p class="install-note">macOS. <a href="https://github.com/silverstein/minutes#windows">Windows</a> and <a href="https://github.com/silverstein/minutes#linux">Linux</a> via cargo install.</p>
+    <p class="install-note">macOS, Windows, Linux. <code>npx</code> works everywhere — Claude Desktop, Cursor, Windsurf, any MCP client.</p>
   </section>
 
   <!-- Pipeline -->
@@ -507,7 +512,7 @@
     <div class="audience-grid">
       <div class="audience-card">
         <h3>Developers</h3>
-        <p>15 CLI commands. 94 tests. Rust engine, single binary, MIT license. Homebrew, cross-platform CI, <code>cargo install</code>. Structured YAML frontmatter you can grep.</p>
+        <p>15 CLI commands. 124 tests. Rust engine, single binary, MIT license. Homebrew, cross-platform CI, <code>cargo install</code>. TypeScript SDK for agent developers.</p>
       </div>
       <div class="audience-card">
         <h3>Knowledge workers</h3>
@@ -515,7 +520,7 @@
       </div>
       <div class="audience-card">
         <h3>AI agents</h3>
-        <p>12 MCP tools. 6 resources. Structured intents in YAML. Decision consistency tracking. People profiles. Any agent that speaks MCP can use Minutes as its memory layer.</p>
+        <p>13 MCP tools. 6 resources. Structured intents in YAML. Decision consistency tracking. People profiles. Any agent that speaks MCP can use Minutes as its memory layer.</p>
       </div>
     </div>
   </section>
@@ -604,7 +609,7 @@
             <td class="no">No</td>
             <td class="no">No</td>
             <td class="no">No</td>
-            <td class="highlight">12 MCP tools</td>
+            <td class="highlight">13 MCP tools</td>
           </tr>
           <tr>
             <td>Cross-meeting intelligence</td>

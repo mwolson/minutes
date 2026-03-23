@@ -1,10 +1,9 @@
-// Pure-TypeScript meeting file reader.
+// minutes-sdk — conversation memory for AI agents
 //
-// Provides the same functionality as the Rust `minutes-reader` crate:
-// parse YAML frontmatter, list meetings, search meetings, get meeting.
+// Query meeting transcripts, decisions, and action items from any
+// AI agent or application. The "Mem0 for human conversations."
 //
-// Used by the MCP server when the `minutes` CLI binary is not installed,
-// enabling `npx minutes-mcp` to work without Rust.
+// Same functionality as the Rust `minutes-reader` crate.
 //
 // Architecture:
 //   ~/meetings/*.md --> parseFrontmatter() --> MeetingFile

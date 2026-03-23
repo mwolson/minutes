@@ -38,7 +38,7 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
 
-import * as reader from "./reader.js";
+import * as reader from "minutes-sdk";
 
 const UI_RESOURCE_URI = "ui://minutes/dashboard";
 
