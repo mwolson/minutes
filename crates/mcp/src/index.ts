@@ -289,7 +289,7 @@ function validatePathInDirectories(
 
 const server = new McpServer({
   name: "minutes",
-  version: "0.4.0",
+  version: "0.5.0",
 });
 
 // Configurable directories — override via env vars in Claude Desktop extension settings
