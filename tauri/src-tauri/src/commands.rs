@@ -2211,6 +2211,7 @@ pub fn cmd_get_settings() -> serde_json::Value {
             "auto_paste": config.dictation.auto_paste,
             "silence_timeout_ms": config.dictation.silence_timeout_ms,
             "max_utterance_secs": config.dictation.max_utterance_secs,
+            "hotkey_enabled": config.dictation.hotkey_enabled,
             "hotkey_keycode": config.dictation.hotkey_keycode,
         },
     })
@@ -2269,6 +2270,9 @@ pub fn cmd_set_setting(section: String, key: String, value: String) -> Result<St
             config.dictation.auto_paste = value == "true";
         }
         ("dictation", "cleanup_engine") => config.dictation.cleanup_engine = value.clone(),
+        ("dictation", "hotkey_enabled") => {
+            config.dictation.hotkey_enabled = value == "true";
+        }
         ("dictation", "hotkey_keycode") => {
             config.dictation.hotkey_keycode = value
                 .parse()

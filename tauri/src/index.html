@@ -3197,6 +3197,15 @@
         const nativeDictationHotkey = await invoke('cmd_dictation_hotkey_status').catch(() => null);
         if (nativeDictationHotkey) {
           applyDictationHotkeyStatus(nativeDictationHotkey);
+          if (s.dictation?.hotkey_enabled && nativeDictationHotkey.state === 'disabled') {
+            const restored = await invoke('cmd_enable_dictation_hotkey', {
+              enabled: true,
+              keycode: dictationKeycode,
+            }).catch(() => null);
+            if (restored) {
+              applyDictationHotkeyStatus(restored);
+            }
+          }
         }
         loadStorageStats();
         loadVaultStatus();
@@ -3398,6 +3407,24 @@
       Home: 115, End: 119, PageUp: 116, PageDown: 121, Delete: 117,
       ArrowLeft: 123, ArrowRight: 124, ArrowDown: 125, ArrowUp: 126,
     };
+    const BROWSER_KEY_TO_MAC = {
+      CapsLock: 57, 'Caps Lock': 57, Fn: 63, fn: 63,
+      Backspace: 51, Delete: 117, Escape: 53, Esc: 53, Tab: 48, ' ': 49, Space: 49,
+      Enter: 36, Return: 36,
+      ArrowLeft: 123, ArrowRight: 124, ArrowDown: 125, ArrowUp: 126,
+      Home: 115, End: 119, PageUp: 116, PageDown: 121,
+      F1: 122, F2: 120, F3: 99, F4: 118, F5: 96, F6: 97, F7: 98, F8: 100,
+      F9: 101, F10: 109, F11: 103, F12: 111, F13: 105, F14: 107, F15: 113, F16: 106,
+      F18: 79, F19: 80,
+    };
+    const LEGACY_KEYCODE_TO_MAC = {
+      8: 51, 9: 48, 13: 36, 20: 57, 27: 53, 32: 49,
+      33: 116, 34: 121, 35: 119, 36: 115,
+      37: 123, 38: 126, 39: 124, 40: 125,
+      112: 122, 113: 120, 114: 99, 115: 118, 116: 96, 117: 97, 118: 98, 119: 100,
+      120: 101, 121: 109, 122: 103, 123: 111,
+      144: 63,
+    };
     let dictationKeycode = 57; // default: Caps Lock
     let dictationHotkeyEnabled = false;
     let dictationHotkeyPending = false;
@@ -3408,6 +3435,20 @@
 
     function dictationHotkeyLabel(keycode) {
       return KEYCODE_NAMES[keycode] || `Key ${keycode}`;
+    }
+
+    function eventToMacKeycode(e) {
+      if (typeof BROWSER_CODE_TO_MAC[e.code] === 'number') {
+        return BROWSER_CODE_TO_MAC[e.code];
+      }
+      if (typeof BROWSER_KEY_TO_MAC[e.key] === 'number') {
+        return BROWSER_KEY_TO_MAC[e.key];
+      }
+      const legacy = e.keyCode ?? e.which;
+      if (typeof LEGACY_KEYCODE_TO_MAC[legacy] === 'number') {
+        return LEGACY_KEYCODE_TO_MAC[legacy];
+      }
+      return null;
     }
 
     function clearDictationHotkeyStartupTimer() {
@@ -3512,13 +3553,26 @@
       hotkeyRecordBtn.style.borderColor = 'var(--accent)';
       hotkeyRecordBtn.style.color = 'var(--accent)';
 
-      function captureKey(e) {
+      async function persistDictationHotkeySelection(macKeycode) {
+        await invoke('cmd_set_setting', {
+          section: 'dictation',
+          key: 'hotkey_keycode',
+          value: String(macKeycode),
+        });
+      }
+
+      function cleanupCaptureListeners() {
+        document.removeEventListener('keydown', captureKey, true);
+        document.removeEventListener('keyup', captureKey, true);
+      }
+
+      async function captureKey(e) {
         e.preventDefault();
         e.stopPropagation();
-        document.removeEventListener('keydown', captureKey, true);
+        cleanupCaptureListeners();
         isRecordingHotkey = false;
 
-        const macKeycode = BROWSER_CODE_TO_MAC[e.code];
+        const macKeycode = eventToMacKeycode(e);
         if (typeof macKeycode !== 'number') {
           hotkeyRecordBtn.textContent = dictationHotkeyLabel(dictationKeycode);
           hotkeyRecordBtn.style.borderColor = '';
@@ -3536,10 +3590,15 @@
         hotkeyRecordBtn.style.borderColor = '';
         hotkeyRecordBtn.style.color = '';
 
-        // Save to config
-        invoke('cmd_set_setting', { section: 'dictation', key: 'hotkey_keycode', value: String(macKeycode) }).catch((error) => {
+        try {
+          await persistDictationHotkeySelection(macKeycode);
+        } catch (error) {
           console.error('Save dictation hotkey:', error);
-        });
+          const status = document.getElementById('settings-dictation-hotkey-status');
+          status.style.color = 'var(--red)';
+          status.textContent = `Minutes couldn't save ${name} as the dictation hotkey.`;
+          return;
+        }
 
         // If hotkey is enabled, restart with new key
         if (dictationHotkeyEnabled || dictationHotkeyPending) {
@@ -3554,18 +3613,33 @@
                 message: String(error),
               });
             });
+        } else {
+          const status = document.getElementById('settings-dictation-hotkey-status');
+          status.style.color = '';
+          status.textContent = `${name} saved. Toggle the dictation hotkey on when you're ready to use it.`;
         }
       }
 
       document.addEventListener('keydown', captureKey, true);
+      document.addEventListener('keyup', captureKey, true);
     });
 
     document.getElementById('settings-dictation-hotkey').addEventListener('click', async () => {
       const next = !(dictationHotkeyEnabled || dictationHotkeyPending);
       try {
         const status = await invoke('cmd_enable_dictation_hotkey', { enabled: next, keycode: dictationKeycode });
+        await invoke('cmd_set_setting', {
+          section: 'dictation',
+          key: 'hotkey_enabled',
+          value: String(status.enabled || status.pending),
+        });
         applyDictationHotkeyStatus(status);
       } catch (e) {
+        await invoke('cmd_set_setting', {
+          section: 'dictation',
+          key: 'hotkey_enabled',
+          value: 'false',
+        }).catch(() => {});
         applyDictationHotkeyStatus({
           state: 'failed',
           enabled: false,

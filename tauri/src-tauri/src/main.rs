@@ -410,12 +410,26 @@ fn main() {
         })
         .setup(move |app| {
             let initial_recording = minutes_core::pid::status().recording;
+            let startup_config = minutes_core::config::Config::load();
 
             // Clean up stale terminal workspaces from previous sessions
             context::cleanup_stale_workspaces();
 
             // Create main window on launch
             show_main_window(app.handle());
+
+            #[cfg(target_os = "macos")]
+            if startup_config.dictation.hotkey_enabled {
+                let app_handle = app.handle().clone();
+                let keycode = startup_config.dictation.hotkey_keycode;
+                std::thread::spawn(move || {
+                    if let Err(error) =
+                        commands::start_dictation_hotkey_with_keycode(app_handle, keycode)
+                    {
+                        eprintln!("[dictation-hotkey] startup restore failed: {}", error);
+                    }
+                });
+            }
 
             // Calendar state for dynamic tray menu items
             let cal_state = Arc::new(std::sync::Mutex::new(CalendarMenuState {

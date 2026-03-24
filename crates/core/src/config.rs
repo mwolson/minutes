@@ -130,6 +130,7 @@ pub struct DictationConfig {
     pub destination_file: String,
     pub destination_command: String,
     pub model: String,
+    pub hotkey_enabled: bool,
     pub hotkey_keycode: i64,
 }
 
@@ -158,6 +159,7 @@ impl Default for DictationConfig {
             destination_file: String::new(),
             destination_command: String::new(),
             model: "base".into(),
+            hotkey_enabled: false,
             hotkey_keycode: 57, // Caps Lock
         }
     }
