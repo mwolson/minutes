@@ -22,8 +22,8 @@ export default function Home() {
         {/* Radial glow — more visible */}
         <div className="absolute -top-[30%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_center,rgba(0,112,243,0.12)_0%,rgba(168,85,247,0.06)_35%,transparent_65%)] pointer-events-none" />
 
-        <h1 className="relative text-[44px] max-sm:text-[32px] font-bold leading-[1.15] mb-4 tracking-[-0.04em] bg-gradient-to-b from-white to-[#a1a1a1] bg-clip-text text-transparent">
-          Your AI remembers every<br />conversation you&apos;ve had
+        <h1 className="relative text-[48px] max-sm:text-[34px] font-bold leading-[1.1] mb-4 tracking-[-0.04em] bg-gradient-to-b from-white to-[#a1a1a1] bg-clip-text text-transparent">
+          Open-source conversation memory.
         </h1>
         <p className="relative text-[17px] max-sm:text-[15px] text-[#a1a1a1] max-w-[540px] mx-auto mb-8 leading-relaxed">
           Agents have run logs. Humans have conversations. Minutes captures the human side — the decisions, the intent, the context — and makes it queryable. Local, open source, free forever.
