@@ -2116,7 +2116,7 @@ fn cmd_health(json: bool) -> Result<()> {
 
 /// Bundled 3-second demo WAV (generated silence with a beep).
 /// If this file doesn't exist at build time, compilation fails — intentionally.
-const DEMO_WAV: &[u8] = include_bytes!("../../assets/demo.wav");
+const DEMO_WAV: &[u8] = include_bytes!("../assets/demo.wav");
 
 fn cmd_demo(config: &Config) -> Result<()> {
     // Ensure output directory exists
