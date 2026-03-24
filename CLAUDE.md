@@ -46,7 +46,7 @@ open target/release/bundle/macos/Minutes.app   # Launch app
 ## Release Process
 
 When shipping a new version:
-1. Bump version in: `Cargo.toml` (workspace), `tauri/src-tauri/tauri.conf.json`, `crates/mcp/package.json`, `crates/sdk/package.json`
+1. Bump version in: `Cargo.toml` (workspace), `crates/cli/Cargo.toml` (minutes-core dep version), `tauri/src-tauri/tauri.conf.json`, `crates/mcp/package.json`, `crates/sdk/package.json`
 2. **Also bump the version string in `crates/mcp/src/index.ts`** (the `McpServer({ version })` constructor). This must match `package.json`.
 3. Verify all 5 match: `grep version Cargo.toml tauri/src-tauri/tauri.conf.json crates/mcp/package.json crates/sdk/package.json && grep 'version:' crates/mcp/src/index.ts`
 4. **Verify MCP runtime deps**: all `import` statements in `crates/mcp/src/index.ts` must have their packages in `dependencies` (not `devDependencies`) in `package.json`. Run: `node -e "require('./crates/mcp/dist/index.js')"` to smoke-test.
