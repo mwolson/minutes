@@ -1,11 +1,7 @@
 # TODOS.md — Minutes
 
-## P1: Agent Memory SDK (TypeScript) — IN PROGRESS
-**What:** Extract the pure-TS file reading from the npx MCP server into a standalone `minutes-sdk` npm package. Any agent framework (LangChain, CrewAI, Autogen) can `import { searchMeetings } from 'minutes-sdk'` to query human conversation memory.
-**Why:** Positions Minutes as infrastructure, not just a tool. The bridge between Mem0 (agent memory, 41k stars) and human conversation capture. Every agent developer becomes a potential user.
-**Context:** Added to active scope during CEO review (2026-03-22). Ships after npx minutes-mcp.
-**Effort:** M (human: ~1 week / CC: ~30 min)
-**Depends on:** npx minutes-mcp shipping first (pure-TS file reading is the foundation).
+## ~~P1: Agent Memory SDK (TypeScript)~~ DONE
+**Shipped:** 2026-03-24. `minutes-sdk@0.7.1` on npm with README, usage examples (Vercel AI SDK, LangChain), `defaultDir()`, `listVoiceMemos()`, `findDecisions()`. 7 exported functions + 5 types.
 
 ## P2: Claude Code Plugin Standalone Distribution — IN PROGRESS
 **What:** Publish the `.claude/plugins/minutes/` plugin so any Claude Code user can install it without cloning the Minutes repo. `/minutes record` just works in any CC session.
