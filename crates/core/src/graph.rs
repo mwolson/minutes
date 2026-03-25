@@ -304,6 +304,16 @@ pub fn rebuild_index_at(config: &Config, path: &Path) -> Result<GraphStats, Grap
             }
         }
 
+        // Source 5: speaker_map (confirmed speaker attributions)
+        for attr in &frontmatter.speaker_map {
+            if attr.confidence == crate::diarize::Confidence::High {
+                let slug = slugify(&attr.name);
+                if !file_people.iter().any(|(s, _, _, _)| *s == slug) {
+                    file_people.push((slug, attr.name.clone(), vec![], "speaker"));
+                }
+            }
+        }
+
         // Insert/update people and link to meeting
         for (slug, name, aliases, role) in &file_people {
             let aliases_json = serde_json::to_string(aliases).unwrap_or_else(|_| "[]".into());

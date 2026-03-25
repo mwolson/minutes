@@ -39,6 +39,13 @@ export interface Intent {
   by_date?: string;
 }
 
+export interface SpeakerAttribution {
+  speaker_label: string;
+  name: string;
+  confidence: "high" | "medium" | "low";
+  source: "deterministic" | "llm" | "enrollment" | "manual";
+}
+
 export interface Frontmatter {
   title: string;
   type: string;
@@ -56,6 +63,7 @@ export interface Frontmatter {
   action_items: ActionItem[];
   decisions: Decision[];
   intents: Intent[];
+  speaker_map?: SpeakerAttribution[];
 }
 
 export interface MeetingFile {

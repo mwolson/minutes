@@ -130,11 +130,12 @@ minutes/
 ├── BUILD-STATUS.md            # Build progress tracker
 ├── Cargo.toml                 # Workspace root
 ├── crates/
-│   ├── core/src/              # 25 Rust modules — the engine
+│   ├── core/src/              # 26 Rust modules — the engine
 │   │   ├── capture.rs         # Audio capture (cpal)
 │   │   ├── transcribe.rs      # Whisper.cpp transcription (ffmpeg preferred → symphonia fallback, Silero VAD, sinc resampler, dedup)
-│   │   ├── diarize.rs         # Speaker diarization (pyannote-rs native or pyannote subprocess)
-│   │   ├── summarize.rs       # LLM summarization (ureq HTTP client)
+│   │   ├── diarize.rs         # Speaker diarization + attribution types (pyannote-rs native or pyannote subprocess)
+│   │   ├── summarize.rs       # LLM summarization + speaker mapping (ureq HTTP client)
+│   │   ├── voice.rs           # Voice profile storage and matching (voices.db, enrollment, cosine similarity)
 │   │   ├── pipeline.rs        # Orchestrates the full flow + structured extraction
 │   │   ├── notes.rs           # Timestamped notetaking during/after recordings
 │   │   ├── watch.rs           # Folder watcher (settle delay, dedup, lock)
@@ -155,7 +156,7 @@ minutes/
 │   │   ├── screen.rs          # Screen context capture (screenshots)
 │   │   ├── vad.rs             # Voice activity detection
 │   │   └── vault.rs           # Obsidian/Logseq vault sync
-│   ├── cli/                   # CLI binary — 26 commands
+│   ├── cli/                   # CLI binary — 29 commands
 │   ├── reader/                # Lightweight read-only meeting parser (no audio deps)
 │   ├── assets/                # Bundled assets (demo.wav)
 │   └── mcp/                   # MCP server — 10 tools + 6 resources + MCP App dashboard
@@ -195,6 +196,7 @@ node test/mcp_tools_test.mjs                        # 8 MCP integration tests
 - **Silero VAD** (via whisper-rs) — ML-based voice activity detection integrated directly into whisper's transcription params. Prevents hallucination loops by skipping silence segments. Auto-downloaded during `minutes setup`.
 - **Post-transcription safety nets** — no_speech probability filtering (>80% = skip) + repetition detection (3+ consecutive similar segments collapsed). Catches any loops that slip through VAD.
 - **pyannote-rs** for speaker diarization — native Rust, ONNX models (~34MB), no Python. Works in CLI, Tauri desktop app, and via MCP. Behind the `diarize` Cargo feature flag.
+- **Speaker attribution** — confidence-aware system mapping SPEAKER_X labels to real names. Four levels: L0 (deterministic 1-on-1 via calendar+identity), L1 (LLM suggestions capped at Medium confidence), L2 (voice enrollment in `voices.db`), L3 (confirmed-only learning). Wrong names are worse than anonymous — only High-confidence attributions rewrite transcript labels. `speaker_map` in YAML frontmatter is the canonical attribution data. Voice profiles stored in `~/.minutes/voices.db` (separate from `graph.db` which wipes on rebuild).
 - **symphonia** for audio format conversion — m4a/mp3/ogg → WAV, pure Rust (fallback when ffmpeg unavailable)
 - **Windowed-sinc resampler** (32-tap Hann) — alias-free 44100→16000 downsampling for WAV inputs
 - **ureq** for HTTP — pure Rust, no secrets in process args (replaced curl)

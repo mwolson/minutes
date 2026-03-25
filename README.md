@@ -464,8 +464,46 @@ brew install ffmpeg           # macOS
 
 # Enable speaker diarization (optional, ~34MB ONNX models)
 minutes setup --diarization
-# Then set engine in config: diarization.engine = "pyannote-rs"
+
+# Enroll your voice for automatic speaker identification
+minutes enroll              # Records 10s of your voice
+minutes voices              # View enrolled profiles
 ```
+
+### Speaker identification
+
+Minutes maps anonymous speaker labels (`SPEAKER_1`, `SPEAKER_2`) to real names using four levels of confidence-aware attribution:
+
+| Level | How | Confidence | Requires |
+|-------|-----|-----------|----------|
+| **0** | Calendar attendees + `identity.name` → deterministic mapping for 1-on-1 meetings | Medium | Calendar access, `[identity] name` in config |
+| **1** | LLM analyzes transcript context clues and maps speakers to attendees | Medium (capped) | Attendees known + summarization engine or agent CLI |
+| **2** | Your enrolled voice is matched against speaker segments | High | `minutes enroll` (one-time 10s recording) |
+| **3** | You confirm "SPEAKER_1 is Sarah" after a meeting | High | `minutes confirm --meeting <path>` |
+
+Only **High**-confidence attributions rewrite transcript labels. Medium/Low are stored in frontmatter (`speaker_map`) for Claude to surface when asked — "SPEAKER_1 is likely Sarah."
+
+```bash
+# Set your name (required for Levels 0-2)
+# In ~/.config/minutes/config.toml:
+[identity]
+name = "Your Name"
+
+# Enroll your voice (Level 2)
+minutes enroll                    # Record 10s sample
+minutes enroll --file sample.wav  # Or from existing audio
+
+# Confirm attributions after a meeting (Level 3)
+minutes confirm --meeting ~/meetings/2026-03-25-standup.md
+minutes confirm --meeting path.md --speaker SPEAKER_1 --name "Sarah" --save-voice
+
+# Manage voice profiles
+minutes voices              # List profiles
+minutes voices --json       # JSON output
+minutes voices --delete     # Remove all profiles
+```
+
+**Privacy**: Voice enrollment is self-only (no enrolling others). Level 3 confirmed profiles require explicit opt-in per person. Voice embeddings are stored locally in `~/.minutes/voices.db` with 0600 permissions. Nothing leaves your machine.
 
 > **Platform notes:** Calendar integration (auto-detecting meeting attendees) requires macOS. Screen context capture works on macOS and Linux. The voice memo pipeline works on all platforms — any folder sync (iCloud, Dropbox, Google Drive, Syncthing) can feed the watcher. The `minutes service install` auto-start command requires macOS (launchd); on Linux, use systemd or cron. Speaker diarization (`pyannote-rs`) works on all platforms (CLI, Tauri app, and via MCP). All other features — recording, transcription, search, action items, person profiles — work on all platforms.
 
@@ -569,6 +607,10 @@ engine = "auto"           # "auto" (default — uses pyannote-rs if models downl
                           # "pyannote" (legacy — requires pip install pyannote.audio),
                           # "none" (explicitly disabled)
 # threshold = 0.5         # Speaker similarity threshold (0.0–1.0). Lower = fewer speakers.
+
+[voice]
+# enabled = true          # Voice profile matching during diarization (default: true if enrolled)
+# match_threshold = 0.65  # Cosine similarity threshold for voice matching (higher = stricter)
 
 [search]
 engine = "builtin"        # builtin (regex) or qmd (semantic)
