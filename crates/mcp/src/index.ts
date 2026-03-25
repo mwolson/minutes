@@ -13,7 +13,9 @@
  *   - process_audio: Process an audio file through the pipeline
  *   - add_note: Add a timestamped note to a recording or meeting
  *   - consistency_report: Flag conflicting decisions and stale commitments
- *   - get_person_profile: Build a profile for a person across meetings
+ *   - get_person_profile: Rich relationship profile for a person (graph index)
+ *   - track_commitments: List open/stale commitments, filter by person
+ *   - relationship_map: All contacts with scores and losing-touch alerts
  *   - research_topic: Cross-meeting topic research
  *   - qmd_collection_status: Check QMD collection registration
  *   - register_qmd_collection: Register Minutes output as QMD collection
@@ -744,7 +746,7 @@ registerAppTool(
   server,
   "get_person_profile",
   {
-    description: "Build a first-pass profile for a person across meetings using structured intent data.",
+    description: "Get a rich relationship profile for a person: meetings, commitments, topics, relationship score, and trend. Uses the conversation graph index for instant results.",
     inputSchema: {
       name: z.string().describe("Person / attendee name to profile"),
     },
@@ -752,81 +754,87 @@ registerAppTool(
     _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
   },
   async ({ name }) => {
+    // Try graph index first (via CLI `minutes people --json`)
+    if (await isCliAvailable()) {
+      const { stdout } = await runMinutes(["people", "--json"]);
+      const people = parseJsonOutput(stdout);
+
+      if (Array.isArray(people)) {
+        const nameLower = name.toLowerCase();
+        const match = people.find((p: any) =>
+          p.name?.toLowerCase().includes(nameLower) ||
+          p.slug?.toLowerCase().includes(nameLower)
+        );
+
+        if (match) {
+          const daysSince = Math.round(match.days_since || 0);
+          const last = daysSince < 1 ? "today" : daysSince < 2 ? "yesterday" : `${daysSince}d ago`;
+          const sections = [];
+
+          sections.push(`Relationship score: ${(match.score || 0).toFixed(1)} | ${match.meeting_count} meetings | last: ${last}`);
+
+          if (match.losing_touch) {
+            sections.push("⚠ LOSING TOUCH — meeting frequency has declined");
+          }
+
+          if (match.top_topics?.length > 0) {
+            sections.push("Top topics: " + match.top_topics.join(", "));
+          }
+
+          if (match.open_commitments > 0) {
+            sections.push(`Open commitments: ${match.open_commitments}`);
+          }
+
+          return {
+            content: [{ type: "text" as const, text: `Profile for ${match.name}:\n\n${sections.join("\n")}` }],
+            structuredContent: { ...match, view: "person" },
+            _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
+          };
+        }
+      }
+
+      // Fall back to legacy CLI person command for richer meeting-level data
+      const { stdout: legacyOut, stderr } = await runMinutes(["person", name]);
+      const profile = parseJsonOutput(legacyOut);
+
+      if (profile && typeof profile === "object") {
+        const topics = Array.isArray(profile.top_topics) ? profile.top_topics : [];
+        const openIntents = Array.isArray(profile.open_intents) ? profile.open_intents : [];
+        const recentMeetings = Array.isArray(profile.recent_meetings) ? profile.recent_meetings : [];
+
+        if (topics.length === 0 && openIntents.length === 0 && recentMeetings.length === 0) {
+          return {
+            content: [{ type: "text" as const, text: `No profile data found for ${name}.` }],
+            structuredContent: { name, top_topics: [], open_intents: [], recent_meetings: [], view: "person" },
+            _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
+          };
+        }
+
+        const sections = [];
+        if (topics.length > 0) sections.push("Top topics:\n" + topics.map((t: any) => `- ${t.topic} (${t.count})`).join("\n"));
+        if (openIntents.length > 0) sections.push("Open commitments:\n" + openIntents.map((i: any) => `- ${i.kind}: ${i.what}${i.by_date ? ` by ${i.by_date}` : ""}`).join("\n"));
+        if (recentMeetings.length > 0) sections.push("Recent meetings:\n" + recentMeetings.map((m: any) => `- ${m.date} — ${m.title}`).join("\n"));
+
+        return {
+          content: [{ type: "text" as const, text: `Profile for ${profile.name}:\n\n${sections.join("\n\n")}` }],
+          structuredContent: { ...profile, view: "person" },
+          _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
+        };
+      }
+
+      return { content: [{ type: "text" as const, text: stderr || legacyOut || `No data found for ${name}.` }] };
+    }
+
     // Pure-TS fallback when CLI is not available
-    if (!(await isCliAvailable())) {
-      const profile = await reader.getPersonProfile(MEETINGS_DIR, name);
-      const sections = [];
-      if (profile.topics.length > 0) sections.push("Topics: " + profile.topics.join(", "));
-      if (profile.meetings.length > 0) {
-        sections.push("Meetings:\n" + profile.meetings.map((m) => `- ${m.date} — ${m.title}`).join("\n"));
-      }
-      if (profile.openActions.length > 0) {
-        sections.push("Open actions:\n" + profile.openActions.map((a) => `- ${a.task} (${a.status})`).join("\n"));
-      }
-      const text = sections.length > 0 ? sections.join("\n\n") : `No profile data found for ${name}.`;
-      return {
-        content: [{ type: "text" as const, text }],
-        structuredContent: { name, top_topics: profile.topics.map((t) => ({ topic: t, count: 1 })), open_intents: profile.openActions, recent_meetings: profile.meetings, view: "person" },
-        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
-      };
-    }
-
-    const { stdout, stderr } = await runMinutes(["person", name]);
-    const profile = parseJsonOutput(stdout);
-
-    if (!profile || typeof profile !== "object") {
-      return { content: [{ type: "text" as const, text: stderr || stdout }] };
-    }
-
-    const topics = Array.isArray(profile.top_topics) ? profile.top_topics : [];
-    const openIntents = Array.isArray(profile.open_intents) ? profile.open_intents : [];
-    const recentMeetings = Array.isArray(profile.recent_meetings)
-      ? profile.recent_meetings
-      : [];
-
-    if (topics.length === 0 && openIntents.length === 0 && recentMeetings.length === 0) {
-      return {
-        content: [{ type: "text" as const, text: `No profile data found for ${name}.` }],
-        structuredContent: { name, top_topics: [], open_intents: [], recent_meetings: [], view: "person" },
-        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
-      };
-    }
-
+    const profile = await reader.getPersonProfile(MEETINGS_DIR, name);
     const sections = [];
-    if (topics.length > 0) {
-      sections.push(
-        "Top topics:\n" +
-          topics.map((topic: any) => `- ${topic.topic} (${topic.count})`).join("\n")
-      );
-    }
-    if (openIntents.length > 0) {
-      sections.push(
-        "Open commitments/actions:\n" +
-          openIntents
-            .map(
-              (intent: any) =>
-                `- ${intent.kind}: ${intent.what}${intent.by_date ? ` by ${intent.by_date}` : ""}`
-            )
-            .join("\n")
-      );
-    }
-    if (recentMeetings.length > 0) {
-      sections.push(
-        "Recent meetings:\n" +
-          recentMeetings
-            .map((meeting: any) => `- ${meeting.date} — ${meeting.title}`)
-            .join("\n")
-      );
-    }
-
+    if (profile.topics.length > 0) sections.push("Topics: " + profile.topics.join(", "));
+    if (profile.meetings.length > 0) sections.push("Meetings:\n" + profile.meetings.map((m) => `- ${m.date} — ${m.title}`).join("\n"));
+    if (profile.openActions.length > 0) sections.push("Open actions:\n" + profile.openActions.map((a) => `- ${a.task} (${a.status})`).join("\n"));
+    const text = sections.length > 0 ? sections.join("\n\n") : `No profile data found for ${name}.`;
     return {
-      content: [
-        {
-          type: "text" as const,
-          text: `Profile for ${profile.name}:\n\n${sections.join("\n\n")}`,
-        },
-      ],
-      structuredContent: { ...profile, view: "person" },
+      content: [{ type: "text" as const, text }],
+      structuredContent: { name, top_topics: profile.topics.map((t) => ({ topic: t, count: 1 })), open_intents: profile.openActions, recent_meetings: profile.meetings, view: "person" },
       _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "person" },
     };
   }
@@ -1160,6 +1168,134 @@ server.tool(
           text: `Registered ${report.output_dir} as QMD collection "${collection}".`,
         },
       ],
+    };
+  }
+);
+
+// ── Tool: track_commitments ─────────────────────────────────
+
+registerAppTool(
+  server,
+  "track_commitments",
+  {
+    description: "List open and stale commitments (action items, intents, decisions) across all meetings. Optionally filter by person. Answers: 'What did I promise Sarah?' or 'What's overdue?'",
+    inputSchema: {
+      person: z.string().optional().describe("Filter by person name or slug (optional — omit for all commitments)"),
+    },
+    annotations: { title: "Track Commitments", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+  },
+  async ({ person }) => {
+    // Use CLI: minutes people --json (rebuild if needed, read from SQLite)
+    const args = ["people", "--json"];
+    if (!(await isCliAvailable())) {
+      return { content: [{ type: "text" as const, text: "Minutes CLI not available. Install with: cargo install minutes-cli" }] };
+    }
+
+    // Get full people data and extract commitments
+    const { stdout } = await runMinutes(args);
+    const people = parseJsonOutput(stdout);
+
+    if (!Array.isArray(people)) {
+      return { content: [{ type: "text" as const, text: "No relationship data found. Run: minutes people --rebuild" }] };
+    }
+
+    // Filter to the requested person if specified
+    let relevantPeople = people;
+    if (person) {
+      const personLower = person.toLowerCase();
+      relevantPeople = people.filter((p: any) =>
+        p.name?.toLowerCase().includes(personLower) ||
+        p.slug?.toLowerCase().includes(personLower)
+      );
+    }
+
+    // Build commitment summary from open_commitments counts
+    const sections: string[] = [];
+    const withCommitments = relevantPeople.filter((p: any) => p.open_commitments > 0);
+
+    if (withCommitments.length === 0) {
+      const scope = person ? ` for ${person}` : "";
+      return {
+        content: [{ type: "text" as const, text: `No open commitments found${scope}.` }],
+        structuredContent: { commitments: [], person: person || null, view: "commitments" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "commitments" },
+      };
+    }
+
+    for (const p of withCommitments) {
+      sections.push(`${p.name}: ${p.open_commitments} open commitment${p.open_commitments !== 1 ? "s" : ""} (last seen: ${p.last_seen?.split("T")[0] || "unknown"})`);
+    }
+
+    const text = `Open commitments${person ? ` for ${person}` : ""}:\n\n${sections.join("\n")}`;
+
+    return {
+      content: [{ type: "text" as const, text }],
+      structuredContent: { people: withCommitments, person: person || null, view: "commitments" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "commitments" },
+    };
+  }
+);
+
+// ── Tool: relationship_map ──────────────────────────────────
+
+registerAppTool(
+  server,
+  "relationship_map",
+  {
+    description: "Show all contacts with relationship scores, meeting frequency, and 'losing touch' alerts. Overview of your entire conversation network.",
+    inputSchema: {
+      limit: z.number().optional().describe("Max people to return (default: 15)"),
+    },
+    annotations: { title: "Relationship Map", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    _meta: { ui: { resourceUri: UI_RESOURCE_URI } },
+  },
+  async ({ limit }) => {
+    if (!(await isCliAvailable())) {
+      return { content: [{ type: "text" as const, text: "Minutes CLI not available. Install with: cargo install minutes-cli" }] };
+    }
+
+    const maxPeople = limit || 15;
+    const { stdout } = await runMinutes(["people", "--json", "--limit", String(maxPeople)]);
+    const people = parseJsonOutput(stdout);
+
+    if (!Array.isArray(people) || people.length === 0) {
+      return {
+        content: [{ type: "text" as const, text: "No relationship data found. Run: minutes people --rebuild" }],
+        structuredContent: { people: [], view: "relationship_map" },
+        _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "relationship_map" },
+      };
+    }
+
+    // Format human-readable output
+    const lines: string[] = [];
+    const losingTouch: string[] = [];
+
+    for (const p of people) {
+      const daysSince = Math.round(p.days_since || 0);
+      const last = daysSince < 1 ? "today" : daysSince < 2 ? "yesterday" : `${daysSince}d ago`;
+      const status = p.losing_touch
+        ? "⚠ losing touch"
+        : p.open_commitments > 0
+          ? `${p.open_commitments} open commitment${p.open_commitments !== 1 ? "s" : ""}`
+          : "✓ all clear";
+
+      lines.push(`${p.name} — ${p.meeting_count} meetings, last: ${last}, ${status} (score: ${(p.score || 0).toFixed(1)})`);
+
+      if (p.losing_touch) {
+        losingTouch.push(`${p.name} — ${p.meeting_count} meetings total, last seen ${daysSince}d ago`);
+      }
+    }
+
+    let text = `Relationship Map (${people.length} contacts):\n\n${lines.join("\n")}`;
+    if (losingTouch.length > 0) {
+      text += `\n\nLosing Touch:\n${losingTouch.join("\n")}`;
+    }
+
+    return {
+      content: [{ type: "text" as const, text }],
+      structuredContent: { people, view: "relationship_map" },
+      _meta: { ui: { resourceUri: UI_RESOURCE_URI }, view: "relationship_map" },
     };
   }
 );
