@@ -585,7 +585,10 @@ parakeet_binary = "/usr/local/bin/parakeet"
         let config = Config::load_from(&config_path);
         assert_eq!(config.transcription.engine, "parakeet");
         assert_eq!(config.transcription.parakeet_model, "tdt-600m");
-        assert_eq!(config.transcription.parakeet_binary, "/usr/local/bin/parakeet");
+        assert_eq!(
+            config.transcription.parakeet_binary,
+            "/usr/local/bin/parakeet"
+        );
         // Other fields should be defaults
         assert_eq!(config.transcription.model, "small");
         assert_eq!(config.transcription.min_words, 3);

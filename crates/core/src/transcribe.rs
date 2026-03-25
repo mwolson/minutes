@@ -974,10 +974,7 @@ fn num_cpus() -> i32 {
 
 /// Transcribe using parakeet.cpp as a subprocess.
 #[cfg(feature = "parakeet")]
-fn transcribe_with_parakeet(
-    audio_path: &Path,
-    config: &Config,
-) -> Result<String, TranscribeError> {
+fn transcribe_with_parakeet(audio_path: &Path, config: &Config) -> Result<String, TranscribeError> {
     use std::process::Command;
 
     // Step 1: Load audio and convert to 16kHz mono (reuse existing pipeline)
@@ -1032,11 +1029,7 @@ fn transcribe_with_parakeet(
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(TranscribeError::ParakeetFailed(
-            stderr
-                .lines()
-                .last()
-                .unwrap_or("unknown error")
-                .to_string(),
+            stderr.lines().last().unwrap_or("unknown error").to_string(),
         ));
     }
 
@@ -1093,8 +1086,7 @@ fn parse_parakeet_output(raw_output: &str, config: &Config) -> Result<String, Tr
     let raw = raw_output.trim();
 
     // Try JSON parsing first
-    let words: Vec<ParakeetWord> = if let Ok(output) = serde_json::from_str::<ParakeetOutput>(raw)
-    {
+    let words: Vec<ParakeetWord> = if let Ok(output) = serde_json::from_str::<ParakeetOutput>(raw) {
         match output {
             ParakeetOutput::Words(w) => w,
             ParakeetOutput::Object { words, timestamps } => {
@@ -1165,10 +1157,7 @@ fn parse_parakeet_output(raw_output: &str, config: &Config) -> Result<String, Tr
 ///   `[0.00 - 2.50] Hello world`
 ///   `[2.80 - 5.10] How are you`
 #[cfg(feature = "parakeet")]
-fn parse_parakeet_text_output(
-    raw: &str,
-    config: &Config,
-) -> Result<String, TranscribeError> {
+fn parse_parakeet_text_output(raw: &str, config: &Config) -> Result<String, TranscribeError> {
     let mut lines = Vec::new();
 
     for line in raw.lines() {
@@ -1625,7 +1614,11 @@ mod tests {
         let config = Config::default();
         let result = parse_parakeet_output(json, &config).unwrap();
         // All words within 0.5s of each other → one segment
-        assert!(result.contains("[0:00]"), "should have timestamp: {}", result);
+        assert!(
+            result.contains("[0:00]"),
+            "should have timestamp: {}",
+            result
+        );
         assert!(result.contains("Hello"), "should have Hello: {}", result);
         assert!(result.contains("world"), "should have world: {}", result);
     }
@@ -1645,11 +1638,7 @@ mod tests {
         let lines: Vec<&str> = result.trim().lines().collect();
         assert_eq!(lines.len(), 2, "should have 2 segments: {:?}", lines);
         assert!(lines[0].contains("Hello world"), "first: {}", lines[0]);
-        assert!(
-            lines[1].contains("second segment"),
-            "second: {}",
-            lines[1]
-        );
+        assert!(lines[1].contains("second segment"), "second: {}", lines[1]);
     }
 
     #[test]
@@ -1661,7 +1650,11 @@ mod tests {
         ]}"#;
         let config = Config::default();
         let result = parse_parakeet_output(json, &config).unwrap();
-        assert!(result.contains("Hello"), "should parse object format: {}", result);
+        assert!(
+            result.contains("Hello"),
+            "should parse object format: {}",
+            result
+        );
     }
 
     #[test]
@@ -1714,8 +1707,16 @@ mod tests {
         let result = parse_parakeet_output(text, &config).unwrap();
         let lines: Vec<&str> = result.trim().lines().collect();
         assert_eq!(lines.len(), 2, "should have 2 lines: {:?}", lines);
-        assert!(lines[0].contains("[0:00] Hello world"), "first: {}", lines[0]);
-        assert!(lines[1].contains("[0:03] How are you"), "second: {}", lines[1]);
+        assert!(
+            lines[0].contains("[0:00] Hello world"),
+            "first: {}",
+            lines[0]
+        );
+        assert!(
+            lines[1].contains("[0:03] How are you"),
+            "second: {}",
+            lines[1]
+        );
     }
 
     #[test]
