@@ -45,6 +45,11 @@ pub fn live_transcript_wav_path() -> PathBuf {
     Config::minutes_dir().join("live-transcript.wav")
 }
 
+/// Path to the live transcript status sidecar (`~/.minutes/live-transcript-status.json`).
+pub fn live_transcript_status_path() -> PathBuf {
+    Config::minutes_dir().join("live-transcript-status.json")
+}
+
 /// Path to the recording metadata JSON (`~/.minutes/recording-meta.json`).
 pub fn recording_meta_path() -> PathBuf {
     Config::minutes_dir().join("recording-meta.json")

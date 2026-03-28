@@ -226,6 +226,10 @@ pub struct LiveTranscriptConfig {
     pub max_utterance_secs: u64,
     /// Whether to save raw WAV alongside JSONL for post-meeting reprocessing.
     pub save_wav: bool,
+    /// Whether the keyboard shortcut is enabled.
+    pub shortcut_enabled: bool,
+    /// The keyboard shortcut string (e.g., "CmdOrCtrl+Shift+L").
+    pub shortcut: String,
 }
 
 impl Default for LiveTranscriptConfig {
@@ -234,6 +238,8 @@ impl Default for LiveTranscriptConfig {
             model: String::new(), // empty = use dictation model
             max_utterance_secs: 30,
             save_wav: true,
+            shortcut_enabled: false,
+            shortcut: "CmdOrCtrl+Shift+L".into(),
         }
     }
 }

@@ -73,9 +73,20 @@ struct LiveTranscriptWriter {
     wav_writer: Option<hound::WavWriter<BufWriter<File>>>,
     line_count: usize,
     start_time: std::time::Instant,
+    start_wall: DateTime<Local>,
     jsonl_path: PathBuf,
     jsonl_failed: bool,
     wav_failed: bool,
+}
+
+/// Lightweight sidecar written atomically on each utterance.
+/// Status readers check this instead of reparsing the full JSONL.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveStatus {
+    pub start_time: DateTime<Local>,
+    pub line_count: usize,
+    pub last_offset_ms: u64,
+    pub last_duration_ms: u64,
 }
 
 impl LiveTranscriptWriter {
@@ -115,15 +126,39 @@ impl LiveTranscriptWriter {
             None
         };
 
-        Ok(Self {
+        let start_wall = Local::now();
+        let writer = Self {
             jsonl_writer,
             wav_writer,
             line_count: 0,
             start_time: std::time::Instant::now(),
+            start_wall,
             jsonl_path,
             jsonl_failed: false,
             wav_failed: false,
-        })
+        };
+
+        // Write initial sidecar status
+        writer.write_sidecar();
+
+        Ok(writer)
+    }
+
+    /// Write the lightweight sidecar status file (atomic rename).
+    fn write_sidecar(&self) {
+        let status = LiveStatus {
+            start_time: self.start_wall,
+            line_count: self.line_count,
+            last_offset_ms: self.start_time.elapsed().as_millis() as u64,
+            last_duration_ms: 0,
+        };
+        let path = pid::live_transcript_status_path();
+        let tmp = path.with_extension("json.tmp");
+        if let Ok(json) = serde_json::to_string(&status) {
+            if std::fs::write(&tmp, json).is_ok() {
+                std::fs::rename(&tmp, &path).ok();
+            }
+        }
     }
 
     /// Append a transcribed utterance to the JSONL file.
@@ -163,6 +198,8 @@ impl LiveTranscriptWriter {
                 tracing::error!("failed to serialize transcript line: {}", e);
             }
         }
+        // Update sidecar after each successful write
+        self.write_sidecar();
         true
     }
 
@@ -432,24 +469,42 @@ pub fn read_since_duration(duration_ms: u64) -> Result<Vec<TranscriptLine>, Minu
 
 /// Get the status of the current live transcript session.
 pub fn session_status() -> SessionStatus {
-    // Single PID read — derive both active and pid from one call
+    // Single PID read
     let lt_pid = pid::live_transcript_pid_path();
     let pid = pid::check_pid_file(&lt_pid).ok().flatten();
     let active = pid.is_some();
 
     let jsonl_path = pid::live_transcript_jsonl_path();
 
-    // Single JSONL parse — derive both line_count and duration
-    let lines = if jsonl_path.exists() {
-        read_since_line(0).unwrap_or_default()
+    // Read from sidecar if available (O(1) instead of reparsing full JSONL)
+    let status_path = pid::live_transcript_status_path();
+    let (line_count, duration_secs) = if let Ok(content) = std::fs::read_to_string(&status_path) {
+        if let Ok(status) = serde_json::from_str::<LiveStatus>(&content) {
+            let elapsed = (Local::now() - status.start_time).num_seconds().max(0) as f64;
+            // When active, show wall-clock elapsed. When inactive, show transcript span.
+            let dur = if active {
+                elapsed
+            } else {
+                (status.last_offset_ms + status.last_duration_ms) as f64 / 1000.0
+            };
+            (status.line_count, dur)
+        } else {
+            (0, 0.0)
+        }
     } else {
-        Vec::new()
+        // Fallback: no sidecar, parse JSONL (legacy path)
+        let lines = if jsonl_path.exists() {
+            read_since_line(0).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        let count = lines.len();
+        let dur = lines
+            .last()
+            .map(|l| (l.offset_ms + l.duration_ms) as f64 / 1000.0)
+            .unwrap_or(0.0);
+        (count, dur)
     };
-    let line_count = lines.len();
-    let duration_secs = lines
-        .last()
-        .map(|l| (l.offset_ms + l.duration_ms) as f64 / 1000.0)
-        .unwrap_or(0.0);
 
     SessionStatus {
         active,

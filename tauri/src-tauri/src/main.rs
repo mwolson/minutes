@@ -458,8 +458,19 @@ fn main() {
             dictation_stop_flag: Arc::new(AtomicBool::new(false)),
             live_transcript_active: Arc::new(AtomicBool::new(false)),
             live_transcript_stop_flag: Arc::new(AtomicBool::new(false)),
-            live_shortcut_enabled: Arc::new(AtomicBool::new(false)),
-            live_shortcut: Arc::new(Mutex::new("CmdOrCtrl+Shift+L".into())),
+            live_shortcut_enabled: {
+                let cfg = minutes_core::config::Config::load();
+                Arc::new(AtomicBool::new(cfg.live_transcript.shortcut_enabled))
+            },
+            live_shortcut: {
+                let cfg = minutes_core::config::Config::load();
+                let s = if cfg.live_transcript.shortcut.is_empty() {
+                    "CmdOrCtrl+Shift+L".to_string()
+                } else {
+                    cfg.live_transcript.shortcut.clone()
+                };
+                Arc::new(Mutex::new(s))
+            },
         })
         .setup(move |app| {
             let initial_recording = minutes_core::pid::status().recording;
@@ -550,6 +561,25 @@ fn main() {
                     if let Ok(mut current) = dictation_shortcut.lock() {
                         *current = shortcut;
                     }
+                }
+            }
+
+            // Restore live transcript shortcut from config
+            if startup_config.live_transcript.shortcut_enabled {
+                use tauri_plugin_global_shortcut::GlobalShortcutExt;
+                let shortcut = if startup_config.live_transcript.shortcut.is_empty() {
+                    "CmdOrCtrl+Shift+L".to_string()
+                } else {
+                    startup_config.live_transcript.shortcut.clone()
+                };
+                if let Err(e) = app.global_shortcut().register(shortcut.as_str()) {
+                    eprintln!("[live-shortcut] startup restore failed: {}", e);
+                } else {
+                    let state = app.state::<commands::AppState>();
+                    state.live_shortcut_enabled.store(true, Ordering::Relaxed);
+                    if let Ok(mut current) = state.live_shortcut.lock() {
+                        *current = shortcut;
+                    };
                 }
             }
 

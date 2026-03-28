@@ -2578,6 +2578,14 @@ pub fn cmd_set_setting(section: String, key: String, value: String) -> Result<St
                 .map_err(|_| "hotkey_keycode must be a number")?;
         }
 
+        // Live transcript
+        ("live_transcript", "shortcut_enabled") => {
+            config.live_transcript.shortcut_enabled = value == "true";
+        }
+        ("live_transcript", "shortcut") => {
+            config.live_transcript.shortcut = value.clone();
+        }
+
         _ => return Err(format!("Unknown setting: {}.{}", section, key)),
     }
 
@@ -3205,8 +3213,17 @@ pub fn cmd_set_live_shortcut(
         .live_shortcut_enabled
         .store(enabled, Ordering::Relaxed);
     if let Ok(mut current) = state.live_shortcut.lock() {
-        *current = next_shortcut;
+        *current = next_shortcut.clone();
     }
+
+    // Persist to config.toml
+    cmd_set_setting(
+        "live_transcript".into(),
+        "shortcut_enabled".into(),
+        enabled.to_string(),
+    )
+    .ok();
+    cmd_set_setting("live_transcript".into(), "shortcut".into(), next_shortcut).ok();
 
     Ok(cmd_live_shortcut_settings(state))
 }
