@@ -2984,12 +2984,66 @@ fn show_dictation_overlay(app: &tauri::AppHandle) {
 
 // ── Live transcript commands ─────────────────────────────────
 
-#[tauri::command]
-pub fn cmd_start_live_transcript(
-    app: tauri::AppHandle,
-    state: tauri::State<AppState>,
-) -> Result<(), String> {
-    // Atomic CAS: prevents double-click race (T2)
+/// RAII guard that resets the live_transcript_active flag on drop (even on panic).
+struct LiveActiveGuard(Arc<AtomicBool>);
+impl Drop for LiveActiveGuard {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
+
+/// Shared live transcript session runner. Spawned on a background thread by both
+/// cmd_start_live_transcript and handle_live_shortcut_event.
+fn run_live_session(app: tauri::AppHandle, active: Arc<AtomicBool>, stop_flag: Arc<AtomicBool>) {
+    let _guard = LiveActiveGuard(active);
+
+    let config = Config::load();
+
+    if let Ok(workspace) = crate::context::create_workspace(&config) {
+        update_assistant_live_context(&workspace, true);
+    }
+
+    crate::update_tray_state_with_mode(&app, true, true);
+
+    let result = minutes_core::live_transcript::run(stop_flag.clone(), &config);
+
+    stop_flag.store(false, Ordering::Relaxed);
+
+    if let Ok(workspace) = crate::context::create_workspace(&config) {
+        update_assistant_live_context(&workspace, false);
+    }
+
+    match result {
+        Ok((lines, duration, _path)) => {
+            eprintln!(
+                "[live-transcript] ended: {} lines in {:.0}s",
+                lines, duration
+            );
+            if let Some(win) = app.get_webview_window("main") {
+                win.emit(
+                    "live-transcript:stopped",
+                    serde_json::json!({ "lines": lines, "duration_secs": duration }),
+                )
+                .ok();
+            }
+        }
+        Err(e) => {
+            eprintln!("[live-transcript] error: {}", e);
+            if let Some(win) = app.get_webview_window("main") {
+                win.emit(
+                    "live-transcript:error",
+                    serde_json::json!({ "error": e.to_string() }),
+                )
+                .ok();
+            }
+        }
+    }
+
+    crate::update_tray_state(&app, false);
+}
+
+/// Try to acquire the live transcript state. Returns Err with a message on conflict.
+fn try_acquire_live(state: &AppState) -> Result<(), String> {
     if state
         .live_transcript_active
         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -3005,75 +3059,23 @@ pub fn cmd_start_live_transcript(
         state.live_transcript_active.store(false, Ordering::SeqCst);
         return Err("Dictation in progress — stop dictation first".into());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn cmd_start_live_transcript(
+    app: tauri::AppHandle,
+    state: tauri::State<AppState>,
+) -> Result<(), String> {
+    try_acquire_live(&state)?;
 
     let active = state.live_transcript_active.clone();
     let stop_flag = state.live_transcript_stop_flag.clone();
     stop_flag.store(false, Ordering::Relaxed);
 
     let app_clone = app.clone();
-    std::thread::spawn(move || {
-        // RAII guard: resets active flag on drop, even if thread panics (T1)
-        struct ActiveGuard(Arc<AtomicBool>);
-        impl Drop for ActiveGuard {
-            fn drop(&mut self) {
-                self.0.store(false, Ordering::SeqCst);
-            }
-        }
-        let _guard = ActiveGuard(active);
+    std::thread::spawn(move || run_live_session(app_clone, active, stop_flag));
 
-        let config = Config::load();
-
-        // Update the assistant workspace context to mention the live transcript
-        if let Ok(workspace) = crate::context::create_workspace(&config) {
-            update_assistant_live_context(&workspace, true);
-        }
-
-        // Update tray to show live state (T9 + U3: distinct tooltip)
-        crate::update_tray_state_with_mode(&app_clone, true, true);
-
-        let result = minutes_core::live_transcript::run(stop_flag.clone(), &config);
-
-        stop_flag.store(false, Ordering::Relaxed);
-
-        // Clear the live transcript mention from assistant context
-        if let Ok(workspace) = crate::context::create_workspace(&config) {
-            update_assistant_live_context(&workspace, false);
-        }
-
-        match result {
-            Ok((lines, duration, _path)) => {
-                eprintln!(
-                    "[live-transcript] ended: {} lines in {:.0}s",
-                    lines, duration
-                );
-                if let Some(win) = app_clone.get_webview_window("main") {
-                    win.emit(
-                        "live-transcript:stopped",
-                        serde_json::json!({
-                            "lines": lines,
-                            "duration_secs": duration,
-                        }),
-                    )
-                    .ok();
-                }
-            }
-            Err(e) => {
-                eprintln!("[live-transcript] error: {}", e);
-                if let Some(win) = app_clone.get_webview_window("main") {
-                    win.emit(
-                        "live-transcript:error",
-                        serde_json::json!({ "error": e.to_string() }),
-                    )
-                    .ok();
-                }
-            }
-        }
-
-        crate::update_tray_state(&app_clone, false);
-        // _guard drops here, resetting active flag
-    });
-
-    // Emit event to frontend
     if let Some(win) = app.get_webview_window("main") {
         win.emit("live-transcript:started", ()).ok();
     }
@@ -3140,77 +3142,17 @@ pub fn handle_live_shortcut_event(
         state
             .live_transcript_stop_flag
             .store(true, Ordering::Relaxed);
-    } else {
-        // Fire start via the same command handler logic
-        let app_clone = app.clone();
+    } else if try_acquire_live(&state).is_ok() {
         let active = state.live_transcript_active.clone();
         let stop_flag = state.live_transcript_stop_flag.clone();
-
-        if active
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
-        {
-            return; // already starting
-        }
-        if recording_active(&state.recording) || state.dictation_active.load(Ordering::Relaxed) {
-            active.store(false, Ordering::SeqCst);
-            return; // conflicting mode
-        }
         stop_flag.store(false, Ordering::Relaxed);
-
-        std::thread::spawn(move || {
-            struct ActiveGuard(Arc<AtomicBool>);
-            impl Drop for ActiveGuard {
-                fn drop(&mut self) {
-                    self.0.store(false, Ordering::SeqCst);
-                }
-            }
-            let _guard = ActiveGuard(active);
-
-            let config = Config::load();
-            if let Ok(workspace) = crate::context::create_workspace(&config) {
-                update_assistant_live_context(&workspace, true);
-            }
-            crate::update_tray_state_with_mode(&app_clone, true, true);
-
-            if let Some(win) = app_clone.get_webview_window("main") {
-                win.emit("live-transcript:started", ()).ok();
-            }
-
-            let result = minutes_core::live_transcript::run(stop_flag.clone(), &config);
-            stop_flag.store(false, Ordering::Relaxed);
-
-            if let Ok(workspace) = crate::context::create_workspace(&config) {
-                update_assistant_live_context(&workspace, false);
-            }
-
-            match result {
-                Ok((lines, duration, _)) => {
-                    eprintln!("[live-shortcut] ended: {} lines in {:.0}s", lines, duration);
-                    if let Some(win) = app_clone.get_webview_window("main") {
-                        win.emit(
-                            "live-transcript:stopped",
-                            serde_json::json!({
-                                "lines": lines, "duration_secs": duration,
-                            }),
-                        )
-                        .ok();
-                    }
-                }
-                Err(e) => {
-                    eprintln!("[live-shortcut] error: {}", e);
-                    if let Some(win) = app_clone.get_webview_window("main") {
-                        win.emit(
-                            "live-transcript:error",
-                            serde_json::json!({ "error": e.to_string() }),
-                        )
-                        .ok();
-                    }
-                }
-            }
-            crate::update_tray_state(&app_clone, false);
-        });
+        let app_clone = app.clone();
+        std::thread::spawn(move || run_live_session(app_clone, active, stop_flag));
+        if let Some(win) = app.get_webview_window("main") {
+            win.emit("live-transcript:started", ()).ok();
+        }
     }
+    // else: conflicting mode, silently ignore (shortcut is best-effort)
 }
 
 #[tauri::command]

@@ -182,7 +182,7 @@ where
     // Check for conflicts: live transcript must not be active
     let lt_pid = pid::live_transcript_pid_path();
     if let Ok(Some(_)) = pid::check_pid_file(&lt_pid) {
-        return Err(DictationError::RecordingActive.into());
+        return Err(DictationError::LiveTranscriptActive.into());
     }
 
     // Check for conflicts: another dictation must not be active

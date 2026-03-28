@@ -180,6 +180,9 @@ pub enum DictationError {
     #[error("recording in progress — stop recording before dictating")]
     RecordingActive,
 
+    #[error("live transcript in progress — stop it before dictating")]
+    LiveTranscriptActive,
+
     #[error("dictation already active (PID: {0})")]
     AlreadyActive(u32),
 

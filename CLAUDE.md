@@ -115,6 +115,8 @@ certificate or local notarization credentials.
 | **cargo fmt** | Any Rust change | `cargo fmt --all -- --check` |
 | **cargo clippy** | Any Rust change | `cargo clippy --all --no-default-features -- -D warnings` |
 | **SDK rebuild** | Any change to `crates/sdk/src/` | `cd crates/sdk && npm run build` |
+| **Mutual exclusion** | Any change to recording/dictation/live transcript start paths | Verify all three modes check each other's PID/state: `live_transcript::run` checks recording+dictation PIDs, `cmd_record`/`capture::record_to_wav` checks live PID, `dictation::run` checks live PID, Tauri `cmd_start_*` checks `live_transcript_active`+`recording`+`dictation_active` |
+| **Tauri command duplication** | Changes to live transcript start/stop logic | Both `cmd_start_live_transcript` and `handle_live_shortcut_event` must use the shared `try_acquire_live` + `run_live_session` functions. Do NOT duplicate logic. |
 
 ## Release Checklist
 

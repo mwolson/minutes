@@ -127,9 +127,13 @@ impl LiveTranscriptWriter {
     }
 
     /// Append a transcribed utterance to the JSONL file.
-    fn write_utterance(&mut self, text: &str, duration_secs: f64) {
-        if self.jsonl_failed || text.trim().is_empty() {
-            return;
+    /// Returns true if the write succeeded, false if JSONL is broken (data loss).
+    fn write_utterance(&mut self, text: &str, duration_secs: f64) -> bool {
+        if text.trim().is_empty() {
+            return true; // not a failure, just nothing to write
+        }
+        if self.jsonl_failed {
+            return false; // already broken
         }
 
         self.line_count += 1;
@@ -148,15 +152,18 @@ impl LiveTranscriptWriter {
                 if let Err(e) = writeln!(self.jsonl_writer, "{}", json) {
                     tracing::error!("JSONL write failed (disk full?): {}", e);
                     self.jsonl_failed = true;
+                    return false;
                 } else if let Err(e) = self.jsonl_writer.flush() {
                     tracing::error!("JSONL flush failed: {}", e);
                     self.jsonl_failed = true;
+                    return false;
                 }
             }
             Err(e) => {
                 tracing::error!("failed to serialize transcript line: {}", e);
             }
         }
+        true
     }
 
     /// Write raw audio samples to the WAV file.
@@ -320,7 +327,12 @@ fn run_inner(
             if utterance_samples >= max_utterance_samples {
                 tracing::info!("max utterance duration reached, force-finalizing");
                 if let Some(sr) = streaming.finalize(&whisper_ctx) {
-                    writer.write_utterance(&sr.text, sr.duration_secs);
+                    if !writer.write_utterance(&sr.text, sr.duration_secs) {
+                        tracing::error!(
+                            "JSONL write failed — stopping session to prevent data loss"
+                        );
+                        break;
+                    }
                 }
                 streaming.reset();
                 utterance_samples = 0;
@@ -329,7 +341,10 @@ fn run_inner(
         } else if was_speaking && utterance_samples > 0 {
             // Speech just ended — finalize the utterance
             if let Some(sr) = streaming.finalize(&whisper_ctx) {
-                writer.write_utterance(&sr.text, sr.duration_secs);
+                if !writer.write_utterance(&sr.text, sr.duration_secs) {
+                    tracing::error!("JSONL write failed — stopping session to prevent data loss");
+                    break;
+                }
             }
             streaming.reset();
             utterance_samples = 0;
