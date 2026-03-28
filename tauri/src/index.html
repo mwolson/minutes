@@ -1808,7 +1808,7 @@
   <div class="footer" id="footer">
     <div class="footer-actions">
       <button class="btn btn-primary" id="btn-record">Start Recording</button>
-      <button class="btn btn-secondary" id="btn-live" title="Start live transcription for AI coaching" aria-label="Start live transcription">Live</button>
+      <button class="btn btn-secondary" id="btn-live" title="Start live transcription — ask your agent in Recall for coaching" aria-label="Start live transcription">Live</button>
       <button class="btn btn-secondary" id="btn-quick-thought">Quick Thought</button>
       <button class="btn btn-secondary" id="btn-assistant" aria-expanded="false">Recall <span class="recall-nudge" id="recall-nudge" aria-label="Recall has new content"></span></button>
     </div>
@@ -2866,7 +2866,7 @@
         const notice = document.getElementById('output-notice');
         if (noticeIcon) noticeIcon.textContent = '\u{1F399}';
         if (noticeTitle) noticeTitle.textContent = 'Live Transcript';
-        if (noticeDetail) noticeDetail.textContent = 'Transcribes your meeting in real time. Your AI assistant reads the transcript and can coach you mid-call.';
+        if (noticeDetail) noticeDetail.textContent = 'Transcribes your meeting in real time. Ask your agent in Recall for coaching during the call.';
         if (notice) notice.classList.add('active');
         // Auto-dismiss after 4 seconds, then proceed with start
         await new Promise(r => setTimeout(r, 3000));
