@@ -21,6 +21,7 @@ Record a meeting. Capture a voice memo on a walk. Ask Claude *"what did I promis
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Codex</a> &bull;
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Gemini CLI</a> &bull;
   <a href="#any-mcp-client-claude-code-codex-gemini-cli-claude-desktop-or-your-own-agent">Claude Desktop</a> &bull;
+  <a href="#mistral-vibe">Mistral Vibe</a> &bull;
   <a href="#vault-sync-obsidian--logseq">Obsidian</a> &bull;
   <a href="#vault-sync-obsidian--logseq">Logseq</a> &bull;
   <a href="#phone--desktop-voice-memo-pipeline">Phone Voice Memos</a> &bull;
@@ -338,6 +339,20 @@ Minutes exposes a standard MCP server. Point any MCP-compatible client at it:
 
 **Interactive dashboard (Claude Desktop):** Tools render an inline interactive UI via [MCP Apps](https://modelcontextprotocol.io/specification/2025-03-26/server/utilities/apps) — meeting list with filter/search, detail view with fullscreen + "Send to Claude" context injection, **People tab** with relationship cards and click-through profiles, consistency reports. Text-only clients see the same data as plain text.
 
+### Mistral Vibe
+
+Add Minutes to your `~/.vibe/config.toml`:
+
+```toml
+[[mcp_servers]]
+name = "minutes"
+transport = "stdio"
+command = "npx"
+args = ["minutes-mcp"]
+```
+
+All 19 tools are available in Vibe as `minutes_*` (e.g. `minutes_start_recording`, `minutes_search_meetings`).
+
 ### Claude Code (Plugin)
 
 Install the plugin from the marketplace:
@@ -384,6 +399,11 @@ MCP tools are automatically available in Cowork. From your phone via Dispatch: *
 [summarization]
 engine = "agent"
 agent_command = "claude"  # or "codex" for OpenAI Codex users
+
+# Or use Mistral API (requires MISTRAL_API_KEY)
+[summarization]
+engine = "mistral"
+mistral_model = "mistral-large-latest"
 
 # Or use a free local LLM
 [summarization]

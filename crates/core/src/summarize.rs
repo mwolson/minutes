@@ -9,6 +9,7 @@ use crate::config::Config;
 //   "ollama"  → Local Ollama server (no API key needed)
 //   "claude"  → Anthropic Claude API (ANTHROPIC_API_KEY env var, legacy)
 //   "openai"  → OpenAI API (OPENAI_API_KEY env var, legacy)
+//   "mistral" → Mistral API (MISTRAL_API_KEY env var)
 //
 // For long transcripts: map-reduce chunking.
 //   Chunk by time segments → summarize each chunk → synthesize final.
@@ -51,6 +52,7 @@ pub fn summarize_with_screens(
         "agent" => summarize_with_agent(transcript, config),
         "claude" => summarize_with_claude(transcript, screen_files, config),
         "openai" => summarize_with_openai(transcript, screen_files, config),
+        "mistral" => summarize_with_mistral(transcript, screen_files, config),
         "ollama" => summarize_with_ollama(transcript, config),
         other => {
             tracing::warn!(engine = %other, "unknown summarization engine, skipping");
@@ -605,6 +607,102 @@ fn summarize_with_openai(
     Ok(parse_summary_response(&all_text))
 }
 
+// ── Mistral API ─────────────────────────────────────────────
+
+fn summarize_with_mistral(
+    transcript: &str,
+    screen_files: &[std::path::PathBuf],
+    config: &Config,
+) -> Result<Summary, Box<dyn std::error::Error>> {
+    let api_key = std::env::var("MISTRAL_API_KEY")
+        .map_err(|_| "MISTRAL_API_KEY not set. Export it or switch to engine = \"ollama\"")?;
+
+    let model = &config.summarization.mistral_model;
+    let chunks = build_prompt(transcript, config.summarization.chunk_max_tokens);
+    let mut all_summaries = Vec::new();
+
+    let screen_content = encode_screens_for_mistral(screen_files);
+
+    for (i, chunk) in chunks.iter().enumerate() {
+        if chunks.len() > 1 {
+            tracing::info!(chunk = i + 1, total = chunks.len(), "summarizing chunk");
+        }
+
+        let mut content_parts: Vec<serde_json::Value> = Vec::new();
+
+        if i == 0 && !screen_content.is_empty() {
+            tracing::info!(
+                images = screen_content.len(),
+                "sending screen context to Mistral"
+            );
+            content_parts.extend(screen_content.clone());
+            content_parts.push(serde_json::json!({
+                "type": "text",
+                "text": "The images above show what was on screen during this meeting. Use them for context.\n\n"
+            }));
+        }
+
+        content_parts.push(serde_json::json!({
+            "type": "text",
+            "text": format!("Summarize this transcript:\n\n{}", chunk)
+        }));
+
+        let body = serde_json::json!({
+            "model": model,
+            "messages": [
+                { "role": "system", "content": SYSTEM_PROMPT },
+                { "role": "user", "content": content_parts }
+            ],
+            "max_tokens": 1024,
+        });
+
+        let response = http_post(
+            "https://api.mistral.ai/v1/chat/completions",
+            &body,
+            &[
+                ("Authorization", &format!("Bearer {}", api_key)),
+                ("Content-Type", "application/json"),
+            ],
+        )?;
+
+        let text = response["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string();
+        all_summaries.push(text);
+    }
+
+    // If multiple chunks, do a final synthesis
+    let final_text = if all_summaries.len() > 1 {
+        let combined = all_summaries.join("\n\n---\n\n");
+        let synth_body = serde_json::json!({
+            "model": model,
+            "messages": [
+                { "role": "system", "content": "Combine these partial meeting summaries into a single cohesive summary. Use the same KEY POINTS / DECISIONS / ACTION ITEMS format." },
+                { "role": "user", "content": format!("Combine these summaries:\n\n{}", combined) }
+            ],
+            "max_tokens": 1024,
+        });
+
+        let response = http_post(
+            "https://api.mistral.ai/v1/chat/completions",
+            &synth_body,
+            &[
+                ("Authorization", &format!("Bearer {}", api_key)),
+                ("Content-Type", "application/json"),
+            ],
+        )?;
+        response["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string()
+    } else {
+        all_summaries.into_iter().next().unwrap_or_default()
+    };
+
+    Ok(parse_summary_response(&final_text))
+}
+
 // ── Ollama (local) ───────────────────────────────────────────
 
 fn summarize_with_ollama(
@@ -693,6 +791,20 @@ fn encode_screens_for_claude(screen_files: &[std::path::PathBuf]) -> Vec<serde_j
                     "media_type": "image/png",
                     "data": b64
                 }
+            })
+        })
+        .collect()
+}
+
+/// Encode screenshots as Mistral API image_url content blocks.
+/// Mistral uses a flat `image_url` string (no nested object, no `detail` field).
+fn encode_screens_for_mistral(screen_files: &[std::path::PathBuf]) -> Vec<serde_json::Value> {
+    read_and_encode_images(screen_files)
+        .into_iter()
+        .map(|(_name, b64)| {
+            serde_json::json!({
+                "type": "image_url",
+                "image_url": format!("data:image/png;base64,{}", b64)
             })
         })
         .collect()
@@ -843,6 +955,21 @@ fn run_speaker_mapping_prompt(
             let api_key = std::env::var("OPENAI_API_KEY").map_err(|_| "OPENAI_API_KEY not set")?;
             let body = serde_json::json!({"model":"gpt-4o-mini","max_tokens":256,"messages":[{"role":"user","content":prompt}]});
             let resp: serde_json::Value = ureq::post("https://api.openai.com/v1/chat/completions")
+                .header("Authorization", &format!("Bearer {}", api_key))
+                .header("content-type", "application/json")
+                .send_json(&body)?
+                .body_mut()
+                .read_json()?;
+            resp["choices"][0]["message"]["content"]
+                .as_str()
+                .map(|s| s.to_string())
+                .ok_or_else(|| "No text in response".into())
+        }
+        "mistral" => {
+            let api_key =
+                std::env::var("MISTRAL_API_KEY").map_err(|_| "MISTRAL_API_KEY not set")?;
+            let body = serde_json::json!({"model": &config.summarization.mistral_model, "max_tokens": 256, "messages":[{"role":"user","content":prompt}]});
+            let resp: serde_json::Value = ureq::post("https://api.mistral.ai/v1/chat/completions")
                 .header("Authorization", &format!("Bearer {}", api_key))
                 .header("content-type", "application/json")
                 .send_json(&body)?

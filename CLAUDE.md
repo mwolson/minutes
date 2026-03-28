@@ -270,7 +270,7 @@ node test/mcp_tools_test.mjs                        # 8 MCP integration tests
 
 - All audio processing is local (whisper.cpp + pyannote-rs + Silero VAD). ffmpeg recommended but optional.
 - Claude summarizes via MCP when the user asks (no API key needed)
-- Optional automated summarization via Ollama (local) or cloud LLMs
+- Optional automated summarization via Ollama (local), Mistral, or cloud LLMs
 - Config at `~/.config/minutes/config.toml` (optional, compiled defaults work)
 - Tauri assistant uses a singleton workspace at `~/.minutes/assistant/`
 - `CLAUDE.md` holds general assistant instructions; `CURRENT_MEETING.md` is the active meeting focus for "Discuss with AI"
