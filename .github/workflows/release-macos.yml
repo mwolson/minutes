@@ -27,6 +27,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Set C++ include path for whisper.cpp
+        run: echo "CXXFLAGS=-I$(xcrun --show-sdk-path)/usr/include/c++/v1" >> $GITHUB_ENV
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
