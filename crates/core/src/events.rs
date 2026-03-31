@@ -159,7 +159,10 @@ fn event_log_paths() -> std::io::Result<Vec<PathBuf>> {
         .filter(|path| {
             path.file_name()
                 .and_then(|name| name.to_str())
-                .map(|name| name == "events.jsonl" || (name.starts_with("events.") && name.ends_with(".jsonl")))
+                .map(|name| {
+                    name == "events.jsonl"
+                        || (name.starts_with("events.") && name.ends_with(".jsonl"))
+                })
                 .unwrap_or(false)
         })
         .collect::<Vec<_>>();
@@ -700,8 +703,16 @@ mod tests {
 
             let rotated_path = rotated_events_path_for(older.timestamp);
             fs::create_dir_all(rotated_path.parent().unwrap()).unwrap();
-            fs::write(&rotated_path, format!("{}\n", serde_json::to_string(&older).unwrap())).unwrap();
-            fs::write(events_path(), format!("{}\n", serde_json::to_string(&newer).unwrap())).unwrap();
+            fs::write(
+                &rotated_path,
+                format!("{}\n", serde_json::to_string(&older).unwrap()),
+            )
+            .unwrap();
+            fs::write(
+                events_path(),
+                format!("{}\n", serde_json::to_string(&newer).unwrap()),
+            )
+            .unwrap();
 
             let events = read_events_inner(None, None).unwrap();
             assert_eq!(events.len(), 2);
