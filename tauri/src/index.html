@@ -4536,26 +4536,31 @@
         // Agent command picker (visible when engine = "agent")
         const agentCmdRow = document.getElementById('settings-agent-command-row');
         agentCmdRow.style.display = s.summarization.engine === 'agent' ? '' : 'none';
+        try {
         const agentCmdSel = document.getElementById('settings-agent-command');
         const sumAgents = await invoke('cmd_list_agents');
         const currentCmd = s.summarization.agent_command || 'claude';
-        agentCmdSel.innerHTML = '';
+        agentCmdSel.replaceChildren();
         for (const a of sumAgents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; agentCmdSel.appendChild(o); }
         if (!sumAgents.find(a => a.name === currentCmd)) {
           const o = document.createElement('option'); o.value = currentCmd; o.textContent = currentCmd + ' (custom)'; agentCmdSel.appendChild(o);
         }
         agentCmdSel.value = currentCmd;
         document.getElementById('settings-agent-command-status').textContent = sumAgents.find(a => a.name === currentCmd) ? 'Installed' : 'Custom command';
+        } catch(e) { console.error('agent command picker:', e); }
         setSettingsToggle('settings-screen-context', s.screen_context.enabled);
         document.getElementById('settings-screen-interval-row').style.display = s.screen_context.enabled ? '' : 'none';
         document.getElementById('settings-screen-interval').value = String(s.screen_context.interval_secs);
+        try {
         const agents = await invoke('cmd_list_agents');
         const sel = document.getElementById('settings-agent');
-        sel.innerHTML = '';
+        sel.replaceChildren();
         for (const a of agents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; sel.appendChild(o); }
         sel.value = s.assistant.agent;
         document.getElementById('settings-agent-status').textContent = agents.length + ' agent(s) installed';
+        } catch(e) { console.error('agent list:', e); }
         // Agent launch flags — separate skip-permissions toggle from extra args
+        try {
         const argsArr = s.assistant.agent_args || [];
         const skipPerm = argsArr.includes('--dangerously-skip-permissions');
         const extraArgs = argsArr.filter(a => a !== '--dangerously-skip-permissions');
@@ -4571,6 +4576,7 @@
         skipHint.style.display = supportsSkip ? '' : 'none';
         document.getElementById('settings-agent-args').value = extraArgs.join(' ');
         document.getElementById('settings-agent-args-status').textContent = extraArgs.length ? extraArgs.length + ' flag(s)' : '';
+        } catch(e) { console.error('agent flags:', e); }
         // Call detection settings
         if (s.call_detection) {
           setSettingsToggle('settings-call-detection', s.call_detection.enabled);
@@ -4643,9 +4649,10 @@
             }
           }
         }
-        loadStorageStats();
-        loadVaultStatus();
       } catch (e) { console.error('loadSettings:', e); }
+      // Always load these, even if other settings fail
+      loadStorageStats();
+      loadVaultStatus();
     }
 
     async function loadVaultStatus() {
