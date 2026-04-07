@@ -41,8 +41,10 @@ cp target/release/minutes "$HOME/.local/bin/minutes"
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 export PATH="$HOME/.local/bin:$PATH"
 
-echo "==> Downloading tiny whisper model + Silero VAD..."
-"$HOME/.local/bin/minutes" setup --model tiny || true
+echo "==> Downloading small whisper model + Silero VAD..."
+# Use 'small' (~466MB) because that's what Config::default() looks for. Tiny
+# is faster but would require also writing a config.toml override.
+"$HOME/.local/bin/minutes" setup --model small || true
 
 echo "==> Downloading diarization models (~34MB)..."
 "$HOME/.local/bin/minutes" setup --diarization || true
