@@ -27,7 +27,7 @@ codespace are instant.
 - `ffmpeg` — preferred audio decoder for non-WAV inputs
 - `pulseaudio-utils` — for inspecting Pulse/PipeWire if you start a daemon
 - The `minutes` CLI installed at `~/.local/bin/minutes`
-- Tiny whisper model at `~/.minutes/models/ggml-tiny.bin`
+- Small whisper model at `~/.minutes/models/ggml-small.bin` (matches `Config::default()`)
 - Silero VAD at `~/.minutes/models/ggml-silero-v6.2.0.bin`
 - Diarization models at `~/.minutes/models/diarize/`
 
