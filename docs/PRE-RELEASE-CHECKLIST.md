@@ -107,6 +107,19 @@ gh release create vX.Y.Z \
 
 For preview releases, add `--prerelease` and use a `-alpha.N` / `-beta.N` / `-rc.N` suffix.
 
+## Phase 6.5: Build and upload the .mcpb bundle
+
+The `minutes.mcpb` Claude Desktop marketplace bundle is NOT built by any release workflow. It is built locally with `mcpb pack` and uploaded by hand. Forgetting this step means the Claude Desktop marketplace surface is missing from the release, which will block users who install Minutes through that channel.
+
+```bash
+# From the repo root, after Phase 4 has completed (MCP and SDK already published).
+(cd crates/mcp && npm run build)   # ensures dist/ and dist-ui/ are fresh
+mcpb pack                            # writes minutes.mcpb at repo root
+gh release upload vX.Y.Z minutes.mcpb --repo silverstein/minutes
+```
+
+`mcpb pack` writes the bundle to `minutes.mcpb` at the repo root, internally versioned to whatever is in `manifest.json` (so make sure that file was bumped in Phase 3). The release page convention is the unversioned filename `minutes.mcpb`, matching v0.10.2 and earlier.
+
 ## Phase 7: Watch the release workflows
 
 Three workflows fire on a `v*` tag:
@@ -129,10 +142,11 @@ Also check the regular `CI` workflow run on the version-bump commit. The MCP Ser
 
 After the workflows finish:
 
-- The release page has CLI binaries for mac/win/linux, the macOS DMG, and the Windows NSIS installer.
+- The release page has CLI binaries for mac/win/linux, the macOS DMG, the Windows NSIS installer, AND `minutes.mcpb` (built manually in Phase 6.5).
 - `npm view minutes-mcp version` returns the new version.
 - `npm view minutes-sdk version` returns the new version.
 - The Tauri auto-updater `latest.json` is on the release as an asset (uploaded by the Release macOS workflow).
+- Asset list parity check: compare against the previous stable release. The set should match exactly (same names, same count). If anything is missing, that surface will silently break for downstream users.
 
 If any of those are missing, investigate before assuming the release is "out".
 
