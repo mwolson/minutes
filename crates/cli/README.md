@@ -86,7 +86,7 @@ Works with Obsidian, Logseq, grep, or any markdown tool.
 | Speaker diarization | pyannote-rs (native Rust, ~34MB models) |
 | Voice activity detection | Silero VAD (prevents hallucination loops) |
 | Audio formats | m4a, mp3, wav, ogg, webm (ffmpeg or symphonia) |
-| GPU acceleration | Metal, CoreML (macOS), CUDA (Linux/Windows) |
+| GPU acceleration | Metal, CoreML (macOS), CUDA (Linux/Windows), ROCm/HIP, Vulkan |
 | Phone voice memos | Folder watcher + iCloud/Dropbox/Syncthing |
 | MCP server | 15 tools + 7 resources for Claude/Cursor/Windsurf |
 | Desktop app | Tauri v2 menu bar app (macOS, Windows) |
@@ -112,6 +112,8 @@ Claude: [searches meetings] → synthesizes answer from transcripts
 cargo install minutes-cli --features metal    # macOS Metal
 cargo install minutes-cli --features coreml   # macOS Neural Engine
 cargo install minutes-cli --features cuda     # NVIDIA CUDA
+cargo install minutes-cli --features hipblas  # AMD ROCm/HIP (experimental)
+cargo install minutes-cli --features vulkan   # Vulkan (experimental)
 ```
 
 ## Links
