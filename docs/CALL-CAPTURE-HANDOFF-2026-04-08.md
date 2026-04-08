@@ -2,7 +2,22 @@
 
 This document is the handoff point for the next Codex session.
 
+## Post-Merge Status Update (2026-04-08, end of day)
+
+> **This doc was written before the branch landed. Since then everything described below has been merged to `main` and the referenced workspace/branches no longer exist. Read this section first.**
+>
+> - **PR [#96](https://github.com/silverstein/minutes/pull/96) is MERGED** — squashed onto `origin/main` as `4191dfe fix(call-capture): harden native Meet detection and attribution (#96)`.
+> - **PR [#94](https://github.com/silverstein/minutes/pull/94) is CLOSED as superseded** — its three threads (call capture, dark theme #95, palette slice 2 #92) all landed via separate clean PRs; verified no unique content was lost.
+> - **Branches `fix/call-capture-mainline` and `fix/call-capture-hardening` are DELETED** (both local and remote).
+> - **Worktree `/Users/silverbook/Sites/minutes-mainline-call-capture` is REMOVED.**
+>
+> **For the next session**: work in `/Users/silverbook/Sites/minutes` on branch `main`. That is now the only worktree, and `main` is in sync with `origin/main`. The previously-"dirty" workspace was cleaned up yesterday — untracked files notwithstanding, the tracked tree is pristine on main.
+>
+> **The "Source Of Truth" section below is historical and no longer accurate.** Skip to [What Was Landed On `fix/call-capture-mainline`](#what-was-landed-on-fixcall-capture-mainline) for context on what shipped, or jump straight to [What Still Needs To Be Done](#what-still-needs-to-be-done) and [Suggested Next Session Plan](#suggested-next-session-plan) — those instructions are still fully valid, just rooted in the new path.
+
 ## Source Of Truth
+
+> **⚠️ Stale — see Post-Merge Status Update above.**
 
 - Clean branch: `fix/call-capture-mainline`
 - Clean worktree: `/Users/silverbook/Sites/minutes-mainline-call-capture`
