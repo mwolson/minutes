@@ -999,7 +999,7 @@
 
     /* ── Search ── */
     .search-wrap {
-      padding: 0 16px 12px;
+      padding: 10px 16px 12px;
     }
 
     .search-box {
@@ -3379,7 +3379,6 @@
 
     // History for smooth animation
     const barHeights = new Array(NUM_BARS).fill(3);
-
     function parentPath(path) {
       if (!path) return path;
       const normalized = path.replace(/[\\/]+$/, '');
@@ -3423,14 +3422,30 @@
       for (let i = 0; i < NUM_BARS - 1; i++) {
         barHeights[i] = barHeights[i + 1];
       }
-      // Map 0-100 to 3-28px with some randomness for natural feel
-      const jitter = level > 5 ? (Math.random() - 0.5) * level * 0.3 : 0;
-      barHeights[NUM_BARS - 1] = Math.max(3, Math.min(28, (level / 100) * 28 + jitter));
+      // Map 0-100 to 3-28px without synthetic jitter so the waveform tracks
+      // actual audio levels instead of feeling theatrical.
+      barHeights[NUM_BARS - 1] = Math.max(3, Math.min(28, (level / 100) * 28));
 
       for (let i = 0; i < NUM_BARS; i++) {
         bars[i].style.height = barHeights[i] + 'px';
         bars[i].style.opacity = barHeights[i] > 4 ? '0.7' : '0.3';
       }
+    }
+
+    function recordingVizLevel(status) {
+      const rawLevel = Number(status.audioLevel || 0);
+      if (rawLevel > 0) return rawLevel;
+
+      const callHealth = status.callCaptureHealth;
+      if (!callHealth) return 0;
+
+      const micLevel = Number(callHealth.mic_level || 0);
+      const callLevel = Number(callHealth.call_audio_level || 0);
+      if (micLevel > 0 || callLevel > 0) {
+        return Math.max(micLevel, callLevel);
+      }
+
+      return 0;
     }
 
     function playCue(name) {
@@ -3776,7 +3791,7 @@
           syncMeetingRecordButtons();
           footer.style.display = 'none';
           if (status.elapsed) recordingTime.textContent = status.elapsed;
-          updateViz(status.audioLevel || 0);
+          updateViz(recordingVizLevel(status));
 
           // Speed up polling when recording starts
           if (!wasRecording && !wasProcessing) {
@@ -6605,12 +6620,6 @@
       setCallHealthChip(callHealthAudio, 'Call audio waiting', false);
       callBanner.classList.add('active');
       syncMeetingRecordButtons();
-
-      // Only steal focus on first detection, not periodic reminders
-      if (!is_reminder) {
-        currentWindow.show();
-        currentWindow.setFocus();
-      }
     });
 
     document.getElementById('btn-record-call').addEventListener('click', async () => {
