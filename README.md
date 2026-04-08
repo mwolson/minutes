@@ -604,6 +604,10 @@ cargo install --path crates/cli --features vulkan
 > ```bash
 > export HIP_PATH=/path/to/rocm
 > ```
+>
+> **Vulkan users:** On Windows and macOS, set `VULKAN_SDK` to your SDK install
+> root before building. On Linux, `whisper-rs-sys` links against the system
+> `libvulkan`.
 
 ### Setup (all platforms)
 
