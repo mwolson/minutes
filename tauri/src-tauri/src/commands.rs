@@ -743,13 +743,20 @@ pub fn request_stop(
 
                 #[cfg(unix)]
                 {
-                    let rc = unsafe { libc::kill(pid as i32, libc::SIGTERM) };
-                    if rc != 0 {
-                        let err = std::io::Error::last_os_error();
+                    if minutes_core::desktop_control::desktop_app_owns_pid(pid) {
                         eprintln!(
-                            "SIGTERM failed (PID {}): {} — sentinel file will stop recording",
-                            pid, err
+                            "recording PID {} is owned by the desktop app; using sentinel-only stop",
+                            pid
                         );
+                    } else {
+                        let rc = unsafe { libc::kill(pid as i32, libc::SIGTERM) };
+                        if rc != 0 {
+                            let err = std::io::Error::last_os_error();
+                            eprintln!(
+                                "SIGTERM failed (PID {}): {} — sentinel file will stop recording",
+                                pid, err
+                            );
+                        }
                     }
                 }
 
