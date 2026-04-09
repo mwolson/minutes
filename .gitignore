@@ -2,6 +2,8 @@
 .claude/x1-strategy.md
 .claude/growth-strategy.md
 .claude/x-threads.md
+.claude/minutes-operating-plan-*.md
+.claude/minutes-strategy-*.md
 .claude/extension-stats/
 
 # Tombstone: the plugin/ directory was deleted in v0.8.0 after the marketplace
