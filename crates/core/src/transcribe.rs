@@ -179,35 +179,40 @@ fn temp_wav_path(prefix: &str) -> Result<PathBuf, TranscribeError> {
     Ok(std::env::temp_dir().join(unique))
 }
 
-/// Meeting-specialized transcription path that can split long recordings at
-/// natural pauses before dispatching to the active ASR backend.
-pub fn transcribe_meeting(
-    audio_path: &Path,
-    config: &Config,
-) -> Result<TranscribeResult, TranscribeError> {
-    const MIN_MEETING_CHUNKS: usize = 2;
+#[cfg(feature = "parakeet")]
+const PARAKEET_LONG_AUDIO_CHUNK_THRESHOLD_SECS: f64 = 60.0;
+#[cfg(feature = "parakeet")]
+const PARAKEET_LONG_AUDIO_CHUNK_SECS: usize = 45;
 
-    let samples = load_audio_samples(audio_path)?;
-    let audio_duration_secs = samples.len() as f64 / 16000.0;
-    let vad_chunks = detect_meeting_vad_chunks(&samples);
-
-    if vad_chunks.len() < MIN_MEETING_CHUNKS {
-        return transcribe_dispatch(audio_path, config);
+#[cfg(feature = "parakeet")]
+fn fixed_length_chunks(total_samples: usize, max_chunk_samples: usize) -> Vec<(usize, usize)> {
+    if total_samples == 0 || max_chunk_samples == 0 {
+        return Vec::new();
     }
 
-    tracing::info!(
-        chunks = vad_chunks.len(),
-        audio_secs = format!("{:.1}", audio_duration_secs),
-        "meeting transcription using VAD-driven chunk rotation"
-    );
+    let mut chunks = Vec::new();
+    let mut start = 0usize;
+    while start < total_samples {
+        let end = (start + max_chunk_samples).min(total_samples);
+        chunks.push((start, end));
+        start = end;
+    }
+    chunks
+}
 
+fn transcribe_chunk_ranges(
+    samples: &[f32],
+    chunk_ranges: &[(usize, usize)],
+    audio_duration_secs: f64,
+    config: &Config,
+) -> Result<Option<TranscribeResult>, TranscribeError> {
     let mut all_lines = Vec::new();
     let mut aggregate = FilterStats {
         audio_duration_secs,
         ..Default::default()
     };
 
-    for (chunk_index, (start_sample, end_sample)) in vad_chunks.iter().enumerate() {
+    for (chunk_index, (start_sample, end_sample)) in chunk_ranges.iter().enumerate() {
         let chunk_samples = &samples[*start_sample..*end_sample];
         if chunk_samples.is_empty() {
             continue;
@@ -247,7 +252,7 @@ pub fn transcribe_meeting(
     }
 
     if all_lines.is_empty() {
-        return transcribe_dispatch(audio_path, config);
+        return Ok(None);
     }
 
     let cleanup = run_transcript_cleanup_pipeline(all_lines);
@@ -264,10 +269,41 @@ pub fn transcribe_meeting(
     };
     aggregate.final_words = text.split_whitespace().count();
 
-    Ok(TranscribeResult {
+    Ok(Some(TranscribeResult {
         text,
         stats: aggregate,
-    })
+    }))
+}
+
+/// Meeting-specialized transcription path that can split long recordings at
+/// natural pauses before dispatching to the active ASR backend.
+pub fn transcribe_meeting(
+    audio_path: &Path,
+    config: &Config,
+) -> Result<TranscribeResult, TranscribeError> {
+    const MIN_MEETING_CHUNKS: usize = 2;
+
+    let samples = load_audio_samples(audio_path)?;
+    let audio_duration_secs = samples.len() as f64 / 16000.0;
+    let vad_chunks = detect_meeting_vad_chunks(&samples);
+
+    if vad_chunks.len() < MIN_MEETING_CHUNKS {
+        return transcribe_dispatch(audio_path, config);
+    }
+
+    tracing::info!(
+        chunks = vad_chunks.len(),
+        audio_secs = format!("{:.1}", audio_duration_secs),
+        "meeting transcription using VAD-driven chunk rotation"
+    );
+
+    if let Some(result) =
+        transcribe_chunk_ranges(&samples, &vad_chunks, audio_duration_secs, config)?
+    {
+        return Ok(result);
+    }
+
+    transcribe_dispatch(audio_path, config)
 }
 
 /// Whisper transcription path (existing behavior).
@@ -376,6 +412,33 @@ fn transcribe_parakeet_dispatch(
 ) -> Result<TranscribeResult, TranscribeError> {
     #[cfg(feature = "parakeet")]
     {
+        if !crate::parakeet::valid_model(&config.transcription.parakeet_model) {
+            return Err(TranscribeError::ParakeetFailed(format!(
+                "unknown parakeet model '{}'. Valid: {}",
+                config.transcription.parakeet_model,
+                crate::config::VALID_PARAKEET_MODELS.join(", ")
+            )));
+        }
+        let samples = load_audio_samples(audio_path)?;
+        let audio_duration_secs = samples.len() as f64 / 16000.0;
+        if audio_duration_secs > PARAKEET_LONG_AUDIO_CHUNK_THRESHOLD_SECS {
+            let chunk_ranges =
+                fixed_length_chunks(samples.len(), 16000 * PARAKEET_LONG_AUDIO_CHUNK_SECS);
+            tracing::info!(
+                chunks = chunk_ranges.len(),
+                audio_secs = format!("{:.1}", audio_duration_secs),
+                chunk_secs = PARAKEET_LONG_AUDIO_CHUNK_SECS,
+                "chunking long parakeet transcription to avoid monolithic decode"
+            );
+            if let Some(result) =
+                transcribe_chunk_ranges(&samples, &chunk_ranges, audio_duration_secs, config)?
+            {
+                return Ok(result);
+            }
+            return Err(TranscribeError::EmptyTranscript(
+                config.transcription.min_words,
+            ));
+        }
         transcribe_with_parakeet(audio_path, config)
     }
 
@@ -1465,7 +1528,7 @@ fn transcribe_with_parakeet(
                     })?,
                 Ok(output) => {
                     let stderr = String::from_utf8_lossy(&output.stderr);
-                    run_parakeet_cli_structured(
+                    match run_parakeet_cli_structured(
                         binary,
                         &model_path,
                         tmp_wav.path(),
@@ -1473,16 +1536,22 @@ fn transcribe_with_parakeet(
                         &config.transcription.parakeet_model,
                         use_gpu,
                         config,
-                    )
-                    .or_else(|_| {
-                        Err(TranscribeError::ParakeetFailed(
-                            stderr
-                                .lines()
-                                .last()
-                                .unwrap_or("unknown helper error")
-                                .to_string(),
-                        ))
-                    })?
+                    ) {
+                        Ok(parsed) => parsed,
+                        Err(error @ TranscribeError::EmptyAudio)
+                        | Err(error @ TranscribeError::EmptyTranscript(_)) => {
+                            return Err(error);
+                        }
+                        Err(_) => {
+                            return Err(TranscribeError::ParakeetFailed(
+                                stderr
+                                    .lines()
+                                    .last()
+                                    .unwrap_or("unknown helper error")
+                                    .to_string(),
+                            ));
+                        }
+                    }
                 }
                 Err(_) => run_parakeet_cli_structured(
                     binary,
@@ -1840,6 +1909,15 @@ fn parse_parakeet_output(
     let raw_segments = lines.len();
 
     if lines.is_empty() {
+        let zero_token_banner = raw
+            .lines()
+            .map(str::trim)
+            .any(|line| line == "--- Transcription (0 tokens) ---");
+        if zero_token_banner {
+            return Err(TranscribeError::EmptyTranscript(
+                config.transcription.min_words,
+            ));
+        }
         if !has_timestamps {
             // No parseable output at all — include a snippet in the error for debugging
             let preview: String = raw.chars().take(200).collect();
@@ -2323,6 +2401,27 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "parakeet")]
+    fn fixed_length_chunks_splits_audio_without_gaps() {
+        let chunks = fixed_length_chunks(16_000 * 95, 16_000 * 45);
+        assert_eq!(
+            chunks,
+            vec![
+                (0, 16_000 * 45),
+                (16_000 * 45, 16_000 * 90),
+                (16_000 * 90, 16_000 * 95)
+            ]
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "parakeet")]
+    fn fixed_length_chunks_handles_empty_audio() {
+        let chunks = fixed_length_chunks(0, 16_000 * 45);
+        assert!(chunks.is_empty());
+    }
+
+    #[test]
     fn offset_timestamped_lines_applies_chunk_offset() {
         let lines = offset_timestamped_lines(["[0:02] hello", "[0:07] world"].into_iter(), 10.0, 0);
         assert_eq!(lines, vec!["[0:12] hello", "[0:17] world"]);
@@ -2431,6 +2530,54 @@ mod tests {
         assert!(
             err.contains("no [start - end] timestamps"),
             "error should explain the issue: {}",
+            err
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "parakeet")]
+    fn parse_parakeet_zero_token_banner_is_empty_transcript() {
+        let text = "\
+Loading model: tdt-600m
+Model loaded (723 tensors)
+Model moved to GPU
+Encoder: 4 ms
+
+--- Transcription (0 tokens) ---
+
+--- Word Timestamps ---
+";
+        let config = Config::default();
+        let result = parse_parakeet_output(text, &config);
+        assert!(
+            matches!(result, Err(TranscribeError::EmptyTranscript(_))),
+            "zero-token banner should be treated as empty transcript: {:?}",
+            result
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "parakeet")]
+    fn parse_parakeet_nonzero_banner_without_timestamps_still_fails() {
+        let text = "\
+Loading model: tdt-600m
+Model loaded (723 tensors)
+
+--- Transcription (3 tokens) ---
+hello there friend
+
+--- Word Timestamps ---
+";
+        let config = Config::default();
+        let result = parse_parakeet_output(text, &config);
+        assert!(
+            result.is_err(),
+            "nonzero banner without timestamps should fail"
+        );
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("no [start - end] timestamps"),
+            "nonzero malformed output should still surface parser failure: {}",
             err
         );
     }
