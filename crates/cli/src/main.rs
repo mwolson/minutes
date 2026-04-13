@@ -2740,6 +2740,7 @@ fn cmd_diagnose(path: &Path, title: Option<&str>, config: &Config) -> Result<()>
     Ok(())
 }
 
+#[cfg(feature = "parakeet")]
 fn cmd_parakeet_helper(
     binary: &str,
     model_path: &Path,
@@ -2756,6 +2757,22 @@ fn cmd_parakeet_helper(
     Ok(())
 }
 
+#[cfg(not(feature = "parakeet"))]
+fn cmd_parakeet_helper(
+    _binary: &str,
+    _model_path: &Path,
+    _audio_path: &Path,
+    _vocab_path: &Path,
+    _model_id: &str,
+    _gpu: bool,
+    _config: &Config,
+) -> Result<()> {
+    anyhow::bail!(
+        "Parakeet helper is not compiled in. Rebuild with `cargo build --features parakeet`."
+    );
+}
+
+#[cfg(feature = "parakeet")]
 fn cmd_parakeet_benchmark(
     binary: &str,
     model_path: &Path,
@@ -2818,6 +2835,21 @@ fn cmd_parakeet_benchmark(
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
+}
+
+#[cfg(not(feature = "parakeet"))]
+fn cmd_parakeet_benchmark(
+    _binary: &str,
+    _model_path: &Path,
+    _audio_path: &Path,
+    _vocab_path: &Path,
+    _model_id: &str,
+    _gpu: bool,
+    _config: &Config,
+) -> Result<()> {
+    anyhow::bail!(
+        "Parakeet benchmark is not compiled in. Rebuild with `cargo build --features parakeet`."
+    );
 }
 
 fn cmd_watch(dir: Option<&Path>, config: &Config) -> Result<()> {
