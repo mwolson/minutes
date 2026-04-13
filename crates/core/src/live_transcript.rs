@@ -637,12 +637,15 @@ pub fn read_since_line(since_line: usize) -> Result<Vec<TranscriptLine>, Minutes
     read_since_line_from_path(&path, since_line)
 }
 
-fn read_since_line_from_path(path: &Path, since_line: usize) -> Result<Vec<TranscriptLine>, MinutesError> {
+fn read_since_line_from_path(
+    path: &Path,
+    since_line: usize,
+) -> Result<Vec<TranscriptLine>, MinutesError> {
     if !path.exists() {
         return Ok(Vec::new());
     }
 
-    let file = File::open(&path)?;
+    let file = File::open(path)?;
     let reader = BufReader::new(file);
     let mut lines = Vec::new();
 
@@ -790,7 +793,9 @@ fn recording_sidecar_jsonl_looks_current(recording_pid_path: &Path, jsonl_path: 
         .ok();
 
     match (recording_started_at, jsonl_modified_at) {
-        (Some(recording_started_at), Some(jsonl_modified_at)) => jsonl_modified_at >= recording_started_at,
+        (Some(recording_started_at), Some(jsonl_modified_at)) => {
+            jsonl_modified_at >= recording_started_at
+        }
         _ => false,
     }
 }
@@ -963,7 +968,7 @@ mod tests {
                 speaker: None,
             })
             .unwrap()
-            + "\n",
+                + "\n",
         )
         .unwrap();
 
@@ -997,7 +1002,7 @@ mod tests {
                 speaker: None,
             })
             .unwrap()
-            + "\n",
+                + "\n",
         )
         .unwrap();
         std::thread::sleep(std::time::Duration::from_millis(5));
