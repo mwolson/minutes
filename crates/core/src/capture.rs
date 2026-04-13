@@ -832,6 +832,9 @@ fn flush_dual_source_slots(
     pending_system: &mut std::collections::BTreeMap<u64, Vec<f32>>,
     writers: &mut DualCaptureWriters,
     live_tx: &Option<std::sync::mpsc::SyncSender<Vec<f32>>>,
+    slots_both: &mut u64,
+    slots_voice_only: &mut u64,
+    slots_system_only: &mut u64,
 ) -> Result<(), CaptureError> {
     let (Some(current_slot), Some(max_slot)) = (*next_slot, max_slot) else {
         return Ok(());
@@ -842,6 +845,14 @@ fn flush_dual_source_slots(
 
     let mut slot = current_slot;
     while slot <= max_slot {
+        let has_voice = pending_voice.contains_key(&slot);
+        let has_system = pending_system.contains_key(&slot);
+        match (has_voice, has_system) {
+            (true, true) => *slots_both += 1,
+            (true, false) => *slots_voice_only += 1,
+            (false, true) => *slots_system_only += 1,
+            (false, false) => {} // silence slot, both padded
+        }
         let voice = padded_slot(pending_voice.remove(&slot));
         let system = padded_slot(pending_system.remove(&slot));
         writers.write_slot(&voice, &system, live_tx)?;
@@ -929,9 +940,15 @@ fn record_to_wav_dual_source(
 
     let session_start = Instant::now();
     let mut next_slot: Option<u64> = None;
-    let mut max_seen_slot: Option<u64> = None;
+    let mut max_voice_slot: Option<u64> = None;
+    let mut max_system_slot: Option<u64> = None;
     let mut pending_voice = std::collections::BTreeMap::<u64, Vec<f32>>::new();
     let mut pending_system = std::collections::BTreeMap::<u64, Vec<f32>>::new();
+    // Mixer stats for diagnosing dual-source issues
+    let mut slots_both: u64 = 0;
+    let mut slots_voice_only: u64 = 0;
+    let mut slots_system_only: u64 = 0;
+    let mut peak_level: u32 = 0;
 
     loop {
         if stop_flag.load(Ordering::Relaxed) {
@@ -1017,52 +1034,105 @@ fn record_to_wav_dual_source(
             .expect("system stream should stay active")
             .receiver
             .clone();
-        crossbeam_channel::select! {
-            recv(voice_rx) -> chunk => {
-                if let Ok(chunk) = chunk {
-                    let slot = chunk
-                        .timestamp
-                        .checked_duration_since(session_start)
-                        .unwrap_or_default()
-                        .as_millis() as u64 / 100;
-                    next_slot.get_or_insert(slot);
-                    max_seen_slot = Some(max_seen_slot.map_or(slot, |current| current.max(slot)));
-                    pending_voice.insert(slot, chunk.samples);
-                }
-            }
-            recv(system_rx) -> chunk => {
-                if let Ok(chunk) = chunk {
-                    let slot = chunk
-                        .timestamp
-                        .checked_duration_since(session_start)
-                        .unwrap_or_default()
-                        .as_millis() as u64 / 100;
-                    next_slot.get_or_insert(slot);
-                    max_seen_slot = Some(max_seen_slot.map_or(slot, |current| current.max(slot)));
-                    pending_system.insert(slot, chunk.samples);
-                }
-            }
-            default(std::time::Duration::from_millis(100)) => {}
+
+        // Derive slot from wall-clock timestamp relative to session start.
+        // Both streams share the same session_start anchor, so slots from
+        // different devices correspond to the same real-world time window.
+        let slot_for = |chunk: &crate::streaming::AudioChunk| -> u64 {
+            chunk
+                .timestamp
+                .checked_duration_since(session_start)
+                .unwrap_or_default()
+                .as_millis() as u64
+                / 100
+        };
+
+        // Drain all available chunks from both channels before flushing.
+        // The old code used select! to grab ONE chunk per iteration, which
+        // on slower machines meant one source got flushed before the other
+        // source's chunk for that same slot arrived. (#118)
+        let mut got_any = false;
+        while let Ok(chunk) = voice_rx.try_recv() {
+            let slot = slot_for(&chunk);
+            next_slot.get_or_insert(slot);
+            max_voice_slot = Some(max_voice_slot.map_or(slot, |s| s.max(slot)));
+            pending_voice.insert(slot, chunk.samples);
+            got_any = true;
+        }
+        while let Ok(chunk) = system_rx.try_recv() {
+            let slot = slot_for(&chunk);
+            next_slot.get_or_insert(slot);
+            max_system_slot = Some(max_system_slot.map_or(slot, |s| s.max(slot)));
+            pending_system.insert(slot, chunk.samples);
+            got_any = true;
         }
 
-        let flush_up_to = max_seen_slot.map(|slot| slot.saturating_sub(1));
+        // If nothing was available, block briefly for the next chunk
+        if !got_any {
+            crossbeam_channel::select! {
+                recv(voice_rx) -> chunk => {
+                    if let Ok(chunk) = chunk {
+                        let slot = slot_for(&chunk);
+                        next_slot.get_or_insert(slot);
+                        max_voice_slot = Some(max_voice_slot.map_or(slot, |s| s.max(slot)));
+                        pending_voice.insert(slot, chunk.samples);
+                    }
+                }
+                recv(system_rx) -> chunk => {
+                    if let Ok(chunk) = chunk {
+                        let slot = slot_for(&chunk);
+                        next_slot.get_or_insert(slot);
+                        max_system_slot = Some(max_system_slot.map_or(slot, |s| s.max(slot)));
+                        pending_system.insert(slot, chunk.samples);
+                    }
+                }
+                default(std::time::Duration::from_millis(50)) => {}
+            }
+        }
+
+        // Track peak audio level (actual peak, not just last value)
+        let current_level = audio_level();
+        if current_level > peak_level {
+            peak_level = current_level;
+        }
+
+        // Flush only slots where BOTH sources have had a chance to deliver.
+        // Use min(max_voice, max_system) - 1 so we never flush a slot before
+        // both sources have reached it.
+        let safe_slot = match (max_voice_slot, max_system_slot) {
+            (Some(v), Some(s)) => Some(v.min(s).saturating_sub(1)),
+            _ => None,
+        };
         flush_dual_source_slots(
             &mut next_slot,
-            flush_up_to,
+            safe_slot,
             &mut pending_voice,
             &mut pending_system,
             &mut writers,
             &live_tx,
+            &mut slots_both,
+            &mut slots_voice_only,
+            &mut slots_system_only,
         )?;
     }
 
+    // Final flush: write any remaining slots (pad with silence for missing sources)
+    let final_max = match (max_voice_slot, max_system_slot) {
+        (Some(v), Some(s)) => Some(v.max(s)),
+        (Some(v), None) => Some(v),
+        (None, Some(s)) => Some(s),
+        (None, None) => None,
+    };
     flush_dual_source_slots(
         &mut next_slot,
-        max_seen_slot,
+        final_max,
         &mut pending_voice,
         &mut pending_system,
         &mut writers,
         &live_tx,
+        &mut slots_both,
+        &mut slots_voice_only,
+        &mut slots_system_only,
     )?;
 
     voice_stream.take();
@@ -1076,12 +1146,13 @@ fn record_to_wav_dual_source(
     if sidecar_drops > 0 {
         tracing::warn!(
             dropped_chunks = sidecar_drops,
-            "live sidecar: audio chunks dropped (transcript may have gaps)"
+            "live transcript sidecar: chunks dropped (sidecar channel full, transcript may have gaps)"
         );
     }
 
     let total_samples = writers.finalize()?;
     let duration_secs = total_samples as f64 / 16000.0;
+    let total_slots = slots_both + slots_voice_only + slots_system_only;
 
     set_capture_permissions(output_path);
     if let Some(stems) = stem_paths_for(output_path) {
@@ -1090,11 +1161,24 @@ fn record_to_wav_dual_source(
     }
 
     eprintln!(
-        "[minutes] Captured {} mixed samples ({:.1}s), peak audio level during recording: {}",
-        total_samples,
-        duration_secs,
-        AUDIO_LEVEL.load(Ordering::Relaxed)
+        "[minutes] Captured {} mixed samples ({:.1}s), peak audio level: {}",
+        total_samples, duration_secs, peak_level
     );
+    if total_slots > 0 {
+        let pct_both = (slots_both as f64 / total_slots as f64 * 100.0) as u64;
+        eprintln!(
+            "[minutes] Mixer stats: {} slots total, {}% with both sources ({} both, {} voice-only, {} system-only)",
+            total_slots, pct_both, slots_both, slots_voice_only, slots_system_only
+        );
+        tracing::info!(
+            total_slots,
+            slots_both,
+            slots_voice_only,
+            slots_system_only,
+            pct_both,
+            "dual-source mixer stats"
+        );
+    }
 
     if total_samples == 0 {
         return Err(CaptureError::EmptyRecording);

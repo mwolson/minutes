@@ -45,6 +45,10 @@ pub struct AudioChunk {
     pub rms: f32,
     /// Wall-clock timestamp when this chunk was captured.
     pub timestamp: Instant,
+    /// Monotonic per-stream chunk index (0, 1, 2, ...). Each AudioStream
+    /// increments independently. Useful for debugging chunk ordering and
+    /// stream-local diagnostics.
+    pub index: u64,
     /// Which source produced this chunk.
     pub source: SourceRole,
 }
@@ -87,6 +91,7 @@ impl AudioStream {
         let chunk_size: usize = 1600; // 100ms at 16kHz
 
         let mut chunk_buf: Vec<f32> = Vec::with_capacity(chunk_size);
+        let mut chunk_counter: u64 = 0;
 
         let (stream, device_name, _config) = crate::resample::build_resampled_input_stream(
             &device,
@@ -101,10 +106,13 @@ impl AudioStream {
                         let rms = compute_rms(&samples);
                         let level = (rms * 2000.0).min(100.0) as u32;
                         STREAM_AUDIO_LEVEL.store(level, Ordering::Relaxed);
+                        let idx = chunk_counter;
+                        chunk_counter += 1;
                         let _ = tx.try_send(AudioChunk {
                             samples,
                             rms,
                             timestamp: Instant::now(),
+                            index: idx,
                             source: SourceRole::Default,
                         });
                     }
