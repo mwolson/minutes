@@ -634,6 +634,10 @@ pub fn run_sidecar_mpsc(
 /// Read transcript lines from the JSONL file since a given line number.
 pub fn read_since_line(since_line: usize) -> Result<Vec<TranscriptLine>, MinutesError> {
     let path = pid::live_transcript_jsonl_path();
+    read_since_line_from_path(&path, since_line)
+}
+
+fn read_since_line_from_path(path: &Path, since_line: usize) -> Result<Vec<TranscriptLine>, MinutesError> {
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -693,22 +697,32 @@ pub fn session_status() -> SessionStatus {
     let lt_pid = pid::live_transcript_pid_path();
     let lt_process_pid = pid::check_pid_file(&lt_pid).ok().flatten();
 
+    let recording_pid_path = pid::pid_path();
     let recording_pid = pid::check_recording().ok().flatten();
     let status_path = pid::live_transcript_status_path();
     let jsonl_path = pid::live_transcript_jsonl_path();
 
-    derive_session_status(lt_process_pid, recording_pid, &status_path, &jsonl_path)
+    derive_session_status(
+        lt_process_pid,
+        recording_pid,
+        &recording_pid_path,
+        &status_path,
+        &jsonl_path,
+    )
 }
 
 fn derive_session_status(
     lt_process_pid: Option<u32>,
     recording_pid: Option<u32>,
+    recording_pid_path: &Path,
     status_path: &Path,
     jsonl_path: &Path,
 ) -> SessionStatus {
     let live_status = read_live_status(status_path);
     #[cfg(all(feature = "whisper", feature = "streaming"))]
-    let sidecar_active = recording_pid.is_some() && live_status.is_some();
+    let sidecar_active = recording_pid.is_some()
+        && (live_status.is_some()
+            || recording_sidecar_jsonl_looks_current(recording_pid_path, jsonl_path));
     #[cfg(not(all(feature = "whisper", feature = "streaming")))]
     let sidecar_active = false;
 
@@ -724,7 +738,7 @@ fn derive_session_status(
         } else {
             // Fallback: no status file, parse JSONL
             let lines = if jsonl_path.exists() {
-                read_since_line(0).unwrap_or_default()
+                read_since_line_from_path(jsonl_path, 0).unwrap_or_default()
             } else {
                 Vec::new()
             };
@@ -760,6 +774,24 @@ fn derive_session_status(
             None
         },
         source,
+    }
+}
+
+fn recording_sidecar_jsonl_looks_current(recording_pid_path: &Path, jsonl_path: &Path) -> bool {
+    if !jsonl_path.exists() {
+        return false;
+    }
+
+    let recording_started_at = std::fs::metadata(recording_pid_path)
+        .and_then(|meta| meta.modified())
+        .ok();
+    let jsonl_modified_at = std::fs::metadata(jsonl_path)
+        .and_then(|meta| meta.modified())
+        .ok();
+
+    match (recording_started_at, jsonl_modified_at) {
+        (Some(recording_started_at), Some(jsonl_modified_at)) => jsonl_modified_at >= recording_started_at,
+        _ => false,
     }
 }
 
@@ -868,9 +900,12 @@ mod tests {
     #[test]
     fn sidecar_requires_live_status_file_to_report_active() {
         let dir = tempdir().unwrap();
+        let recording_pid_path = dir.path().join("recording.pid");
+        std::fs::write(&recording_pid_path, "123").unwrap();
         let status = derive_session_status(
             None,
             Some(std::process::id()),
+            &recording_pid_path,
             &dir.path().join("live-status.json"),
             &dir.path().join("live.jsonl"),
         );
@@ -884,6 +919,8 @@ mod tests {
     #[test]
     fn sidecar_reports_active_when_recording_pid_and_status_file_exist() {
         let dir = tempdir().unwrap();
+        let recording_pid_path = dir.path().join("recording.pid");
+        std::fs::write(&recording_pid_path, "123").unwrap();
         let status_path = dir.path().join("live-status.json");
         let status = LiveStatus {
             start_time: Local::now(),
@@ -896,6 +933,7 @@ mod tests {
         let status = derive_session_status(
             None,
             Some(std::process::id()),
+            &recording_pid_path,
             &status_path,
             &dir.path().join("live.jsonl"),
         );
@@ -904,5 +942,76 @@ mod tests {
         assert_eq!(status.source, Some(TranscriptSource::RecordingSidecar));
         assert_eq!(status.pid, Some(std::process::id()));
         assert_eq!(status.line_count, 3);
+    }
+
+    #[cfg(all(feature = "whisper", feature = "streaming"))]
+    #[test]
+    fn sidecar_reports_active_when_jsonl_is_newer_than_recording_pid() {
+        let dir = tempdir().unwrap();
+        let recording_pid_path = dir.path().join("recording.pid");
+        let jsonl_path = dir.path().join("live.jsonl");
+        std::fs::write(&recording_pid_path, "123").unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        std::fs::write(
+            &jsonl_path,
+            serde_json::to_string(&TranscriptLine {
+                line: 1,
+                ts: Local::now(),
+                offset_ms: 0,
+                duration_ms: 500,
+                text: "hello".into(),
+                speaker: None,
+            })
+            .unwrap()
+            + "\n",
+        )
+        .unwrap();
+
+        let status = derive_session_status(
+            None,
+            Some(std::process::id()),
+            &recording_pid_path,
+            &dir.path().join("live-status.json"),
+            &jsonl_path,
+        );
+
+        assert!(status.active);
+        assert_eq!(status.source, Some(TranscriptSource::RecordingSidecar));
+        assert_eq!(status.line_count, 1);
+    }
+
+    #[cfg(all(feature = "whisper", feature = "streaming"))]
+    #[test]
+    fn sidecar_stays_inactive_for_stale_jsonl_from_before_recording() {
+        let dir = tempdir().unwrap();
+        let recording_pid_path = dir.path().join("recording.pid");
+        let jsonl_path = dir.path().join("live.jsonl");
+        std::fs::write(
+            &jsonl_path,
+            serde_json::to_string(&TranscriptLine {
+                line: 1,
+                ts: Local::now(),
+                offset_ms: 0,
+                duration_ms: 500,
+                text: "old".into(),
+                speaker: None,
+            })
+            .unwrap()
+            + "\n",
+        )
+        .unwrap();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        std::fs::write(&recording_pid_path, "123").unwrap();
+
+        let status = derive_session_status(
+            None,
+            Some(std::process::id()),
+            &recording_pid_path,
+            &dir.path().join("live-status.json"),
+            &jsonl_path,
+        );
+
+        assert!(!status.active);
+        assert_eq!(status.source, None);
     }
 }

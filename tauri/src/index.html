@@ -4492,6 +4492,7 @@
     let jobsHistory = [];
     let notifyOnCompletion = true;
     let playCaptureCues = true;
+    let stopRequested = false;
     let hotkeyEnabled = false;
     let hotkeyShortcut = 'CmdOrCtrl+Shift+M';
     let dictationShortcutActive = false;
@@ -5053,7 +5054,7 @@
           statusPill.className = 'status-pill recording';
           const queueCount = status.processingJobCount || 0;
           const callHealth = status.callCaptureHealth;
-          statusPill.textContent = mode === 'quick-thought' ? 'quick thought' : 'recording';
+          statusPill.textContent = stopRequested ? 'stopping' : (mode === 'quick-thought' ? 'quick thought' : 'recording');
           const statusBits = [];
           if (queueCount > 0) {
             statusBits.push(`${queueCount} background job${queueCount === 1 ? '' : 's'}`);
@@ -5062,9 +5063,11 @@
             statusBits.push(callHealth.mic_live ? 'Mic live' : 'Mic missing');
             statusBits.push(callHealth.call_audio_live ? 'Call audio live' : 'Call audio missing');
           }
-          recordingLabel.textContent = statusBits.length
-            ? `${currentModeLabel(mode)} · ${statusBits.join(' · ')}`
-            : currentModeLabel(mode);
+          recordingLabel.textContent = stopRequested
+            ? 'Finishing recording…'
+            : (statusBits.length
+              ? `${currentModeLabel(mode)} · ${statusBits.join(' · ')}`
+              : currentModeLabel(mode));
           if (callHealth) {
             recordingSourceHealth.classList.add('active');
             setCallHealthChip(recordingHealthMic, callHealth.mic_live ? 'Mic live' : 'Mic missing', callHealth.mic_live);
@@ -5081,6 +5084,7 @@
           setFooterCaptureMode(true, 'recording');
           if (status.elapsed) recordingTime.textContent = status.elapsed;
           updateViz(status.audioLevel || 0);
+          document.getElementById('btn-stop').disabled = !!stopRequested;
 
           // Speed up polling when recording starts
           if (!wasRecording && !wasProcessing) {
@@ -5088,6 +5092,8 @@
             playCue('start');
           }
         } else if (isProcessing) {
+          stopRequested = false;
+          document.getElementById('btn-stop').disabled = false;
           statusPill.className = 'status-pill processing';
           statusPill.textContent = 'processing';
           processingTitle.textContent = status.processingTitle
@@ -5150,6 +5156,8 @@
           } catch { isLiveTranscript = false; liveBar.classList.remove('active'); }
 
           if (!isLiveTranscript) {
+            stopRequested = false;
+            document.getElementById('btn-stop').disabled = false;
             statusPill.className = 'status-pill';
             statusPill.textContent = 'idle';
             recordingLabel.textContent = 'Recording';
@@ -5585,8 +5593,20 @@
 
     document.getElementById('btn-stop').addEventListener('click', async () => {
       try {
+        stopRequested = true;
+        document.getElementById('btn-stop').disabled = true;
+        statusPill.className = 'status-pill processing';
+        statusPill.textContent = 'stopping';
+        recordingLabel.textContent = 'Finishing recording…';
+        processingBar.classList.add('active');
+        processingTitle.textContent = 'Stopping recording';
+        processingStage.textContent = 'Saving audio and wrapping up…';
+        setFooterCaptureMode(false);
+        startFastPoll();
         await invoke('cmd_stop_recording');
       } catch (e) {
+        stopRequested = false;
+        document.getElementById('btn-stop').disabled = false;
         console.error('Stop:', e);
       }
     });
