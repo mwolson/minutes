@@ -896,7 +896,7 @@ mod tests {
             apps: vec!["zoom.us".into(), "google-meet".into()],
         });
 
-        let running = vec!["zoom.us".into(), "Safari".into()];
+        let running = ["zoom.us".into(), "Safari".into()];
         let mic_live = true;
 
         // Reproduce the decision ordering from detect_active_call without relying
@@ -937,7 +937,7 @@ mod tests {
         });
 
         detector.remember_google_meet_detection();
-        let running = vec!["Safari".into()];
+        let running = ["Safari".into()];
         let config = detector.current_config();
         let native_apps: Vec<&String> = config
             .apps

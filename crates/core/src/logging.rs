@@ -117,8 +117,6 @@ pub fn log_error(step: &str, file: &str, error: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn append_log_writes_json_line_to_file() {
         // Use a temp dir to avoid contaminating real logs

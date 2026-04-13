@@ -809,13 +809,19 @@ mod tests {
     use tempfile::TempDir;
 
     fn test_config(root: &std::path::Path) -> Config {
-        let mut config = Config::default();
-        config.output_dir = root.join("meetings");
-        config.daily_notes.enabled = true;
-        config.daily_notes.path = root.join("daily");
-        config.dictation.destination = "daily_note".into();
-        config.dictation.accumulate = true;
-        config
+        Config {
+            output_dir: root.join("meetings"),
+            daily_notes: crate::config::DailyNotesConfig {
+                enabled: true,
+                path: root.join("daily"),
+            },
+            dictation: crate::config::DictationConfig {
+                destination: "daily_note".into(),
+                accumulate: true,
+                ..crate::config::DictationConfig::default()
+            },
+            ..Config::default()
+        }
     }
 
     #[test]

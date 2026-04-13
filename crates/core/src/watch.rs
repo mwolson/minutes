@@ -722,7 +722,6 @@ mod tests {
 
     #[test]
     fn skip_files_in_processed_and_failed() {
-        let config = Config::default();
         let dir = TempDir::new().unwrap();
         let processed = dir.path().join("processed");
         fs::create_dir_all(&processed).unwrap();

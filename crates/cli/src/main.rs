@@ -4038,11 +4038,13 @@ fn cmd_logs(errors: bool, lines: usize) -> Result<()> {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use serde_json::json;
     use std::sync::{Mutex, MutexGuard, OnceLock};
 
+    #[cfg(feature = "parakeet")]
     #[derive(Serialize)]
     struct DummyTranscript {
         transcript: String,
@@ -4117,6 +4119,7 @@ life (qmd://life/)
     }
 
     #[test]
+    #[cfg(feature = "parakeet")]
     fn parakeet_helper_envelope_flattens_transcript_fields() {
         let envelope = parakeet_helper_envelope(
             "minutes parakeet-helper",

@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn dedup_handles_empty() {
-        let result = dedup_segments(&vec![]);
+        let result = dedup_segments(&[]);
         assert!(result.is_empty());
     }
 
@@ -888,7 +888,7 @@ mod tests {
 
     #[test]
     fn trim_handles_empty() {
-        assert!(trim_trailing_noise(&vec![]).is_empty());
+        assert!(trim_trailing_noise(&[]).is_empty());
     }
 
     #[test]

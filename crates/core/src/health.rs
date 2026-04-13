@@ -508,8 +508,10 @@ mod tests {
 
     #[test]
     fn test_output_dir_missing() {
-        let mut config = Config::default();
-        config.output_dir = "/nonexistent/path/12345".into();
+        let config = Config {
+            output_dir: "/nonexistent/path/12345".into(),
+            ..Config::default()
+        };
         let status = output_dir_status(&config);
         assert_eq!(status.state, "attention");
     }

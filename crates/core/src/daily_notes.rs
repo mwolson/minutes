@@ -202,10 +202,14 @@ mod tests {
         let meeting_path = meetings_dir.join("2026-03-19-pricing-review.md");
         fs::write(&meeting_path, "# Pricing Review\n").unwrap();
 
-        let mut config = Config::default();
-        config.output_dir = meetings_dir.clone();
-        config.daily_notes.enabled = true;
-        config.daily_notes.path = daily_dir.clone();
+        let config = Config {
+            output_dir: meetings_dir.clone(),
+            daily_notes: crate::config::DailyNotesConfig {
+                enabled: true,
+                path: daily_dir.clone(),
+            },
+            ..Config::default()
+        };
 
         let result = write_result(meeting_path, "Pricing Review", ContentType::Meeting);
         let note_path = append_backlink(
@@ -235,10 +239,14 @@ mod tests {
         fs::create_dir_all(memo_path.parent().unwrap()).unwrap();
         fs::write(&memo_path, "# Onboarding Idea\n").unwrap();
 
-        let mut config = Config::default();
-        config.output_dir = meetings_dir.clone();
-        config.daily_notes.enabled = true;
-        config.daily_notes.path = daily_dir.clone();
+        let config = Config {
+            output_dir: meetings_dir.clone(),
+            daily_notes: crate::config::DailyNotesConfig {
+                enabled: true,
+                path: daily_dir.clone(),
+            },
+            ..Config::default()
+        };
 
         let result = write_result(memo_path, "Onboarding Idea", ContentType::Memo);
         let date = Local.with_ymd_and_hms(2026, 3, 19, 9, 0, 0).unwrap();
@@ -260,10 +268,14 @@ mod tests {
         let meeting_path = meetings_dir.join("2026-03-19-strategy-call.md");
         fs::write(&meeting_path, "# Strategy Call\n").unwrap();
 
-        let mut config = Config::default();
-        config.output_dir = meetings_dir.clone();
-        config.daily_notes.enabled = true;
-        config.daily_notes.path = daily_dir.clone();
+        let config = Config {
+            output_dir: meetings_dir.clone(),
+            daily_notes: crate::config::DailyNotesConfig {
+                enabled: true,
+                path: daily_dir.clone(),
+            },
+            ..Config::default()
+        };
 
         let mut fm = Frontmatter {
             title: "Strategy Call".into(),

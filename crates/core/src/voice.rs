@@ -382,7 +382,7 @@ mod tests {
             &conn,
             "mat",
             "Mat",
-            &vec![0.1f32; 4],
+            &[0.1f32; 4],
             "self-enrollment",
             TEST_MODEL_VERSION,
         )
@@ -391,7 +391,7 @@ mod tests {
             &conn,
             "mat",
             "Mat",
-            &vec![0.2f32; 4],
+            &[0.2f32; 4],
             "self-enrollment",
             TEST_MODEL_VERSION,
         )
@@ -431,7 +431,7 @@ mod tests {
             &conn,
             "mat",
             "Mat",
-            &vec![0.1f32; 4],
+            &[0.1f32; 4],
             "self-enrollment",
             TEST_MODEL_VERSION,
         )

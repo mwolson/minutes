@@ -620,7 +620,6 @@ pub fn status() -> RecordingStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fs2::FileExt;
 
     #[test]
     fn is_process_alive_detects_current_process() {

@@ -2217,6 +2217,44 @@ fn normalize_entity_topic(text: &str) -> String {
         .join(" ")
 }
 
+/// Execute the post_record hook if configured.
+/// Runs the command asynchronously in the background with the transcript path as argument.
+pub fn run_post_record_hook(config: &Config, transcript_path: &Path) {
+    if let Some(ref command) = config.hooks.post_record {
+        let cmd = command.clone();
+        let path = transcript_path.display().to_string();
+        std::thread::spawn(move || {
+            tracing::info!(command = %cmd, path = %path, "running post_record hook");
+            match std::process::Command::new("sh")
+                .arg("-c")
+                .arg(format!("{} \"$1\"", cmd))
+                .arg("--")
+                .arg(&path)
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .output()
+            {
+                Ok(output) => {
+                    if !output.status.success() {
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        tracing::warn!(
+                            command = %cmd,
+                            exit_code = output.status.code(),
+                            stderr = %stderr,
+                            "post_record hook failed"
+                        );
+                    } else {
+                        tracing::info!(command = %cmd, "post_record hook completed");
+                    }
+                }
+                Err(error) => {
+                    tracing::warn!(command = %cmd, error = %error, "post_record hook spawn failed");
+                }
+            }
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2818,43 +2856,5 @@ mod tests {
         assert!(marker.exists(), "hook should have created the marker file");
         let contents = std::fs::read_to_string(&marker).unwrap();
         assert_eq!(contents, "test content");
-    }
-}
-
-/// Execute the post_record hook if configured.
-/// Runs the command asynchronously in the background with the transcript path as argument.
-pub fn run_post_record_hook(config: &Config, transcript_path: &Path) {
-    if let Some(ref command) = config.hooks.post_record {
-        let cmd = command.clone();
-        let path = transcript_path.display().to_string();
-        std::thread::spawn(move || {
-            tracing::info!(command = %cmd, path = %path, "running post_record hook");
-            match std::process::Command::new("sh")
-                .arg("-c")
-                .arg(format!("{} \"$1\"", cmd))
-                .arg("--")
-                .arg(&path)
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .output()
-            {
-                Ok(output) => {
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        tracing::warn!(
-                            command = %cmd,
-                            exit_code = output.status.code(),
-                            stderr = %stderr,
-                            "post_record hook failed"
-                        );
-                    } else {
-                        tracing::info!(command = %cmd, "post_record hook completed");
-                    }
-                }
-                Err(error) => {
-                    tracing::warn!(command = %cmd, error = %error, "post_record hook spawn failed");
-                }
-            }
-        });
     }
 }

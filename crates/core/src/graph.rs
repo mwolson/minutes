@@ -1005,20 +1005,16 @@ mod tests {
     use tempfile::TempDir;
 
     fn test_config(dir: &Path) -> Config {
-        let mut config = Config::default();
-        config.output_dir = dir.to_path_buf();
-        config
+        Config {
+            output_dir: dir.to_path_buf(),
+            ..Config::default()
+        }
     }
 
     /// Rebuild index into a temp db file (avoids test parallelism issues).
     fn rebuild_to_temp(config: &Config, tmp: &TempDir) -> GraphStats {
         let db = tmp.path().join("graph.db");
         rebuild_index_at(config, &db).unwrap()
-    }
-
-    fn open_temp_db(tmp: &TempDir) -> Connection {
-        let db = tmp.path().join("graph.db");
-        open_db(&db).unwrap()
     }
 
     fn write_meeting(dir: &Path, filename: &str, content: &str) {
@@ -1093,7 +1089,6 @@ Skip the wizard. Drop users into a pre-populated demo workspace.
         let tmp = TempDir::new().unwrap();
         let meetings = tmp.path().join("meetings");
         fs::create_dir_all(&meetings).unwrap();
-        let config = test_config(&meetings);
 
         // Override db_path for test
         let db = tmp.path().join("test.db");
