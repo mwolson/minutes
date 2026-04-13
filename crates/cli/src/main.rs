@@ -103,6 +103,40 @@ enum Commands {
     #[command(hide = true)]
     ProcessQueue,
 
+    /// Hidden structured Parakeet helper used by Minutes internals.
+    #[command(hide = true)]
+    ParakeetHelper {
+        #[arg(long)]
+        binary: String,
+        #[arg(long)]
+        model_path: PathBuf,
+        #[arg(long)]
+        audio_path: PathBuf,
+        #[arg(long)]
+        vocab_path: PathBuf,
+        #[arg(long)]
+        model_id: String,
+        #[arg(long, default_value_t = false)]
+        gpu: bool,
+    },
+
+    /// Hidden Parakeet benchmark for helper-vs-direct comparisons.
+    #[command(hide = true)]
+    ParakeetBenchmark {
+        #[arg(long)]
+        binary: String,
+        #[arg(long)]
+        model_path: PathBuf,
+        #[arg(long)]
+        audio_path: PathBuf,
+        #[arg(long)]
+        vocab_path: PathBuf,
+        #[arg(long)]
+        model_id: String,
+        #[arg(long, default_value_t = false)]
+        gpu: bool,
+    },
+
     /// Hidden preflight for call-aware recording start decisions.
     #[command(hide = true)]
     PreflightRecord {
@@ -704,6 +738,38 @@ fn main() -> Result<()> {
             Ok(())
         }
         Commands::ProcessQueue => cmd_process_queue(&config),
+        Commands::ParakeetHelper {
+            binary,
+            model_path,
+            audio_path,
+            vocab_path,
+            model_id,
+            gpu,
+        } => cmd_parakeet_helper(
+            &binary,
+            &model_path,
+            &audio_path,
+            &vocab_path,
+            &model_id,
+            gpu,
+            &config,
+        ),
+        Commands::ParakeetBenchmark {
+            binary,
+            model_path,
+            audio_path,
+            vocab_path,
+            model_id,
+            gpu,
+        } => cmd_parakeet_benchmark(
+            &binary,
+            &model_path,
+            &audio_path,
+            &vocab_path,
+            &model_id,
+            gpu,
+            &config,
+        ),
         Commands::PreflightRecord {
             mode,
             intent,
@@ -2671,6 +2737,86 @@ fn cmd_diagnose(path: &Path, title: Option<&str>, config: &Config) -> Result<()>
     let content = std::fs::read_to_string(&result.path)?;
     println!("{}", content);
 
+    Ok(())
+}
+
+fn cmd_parakeet_helper(
+    binary: &str,
+    model_path: &Path,
+    audio_path: &Path,
+    vocab_path: &Path,
+    model_id: &str,
+    gpu: bool,
+    config: &Config,
+) -> Result<()> {
+    let parsed = minutes_core::transcribe::run_parakeet_cli_structured(
+        binary, model_path, audio_path, vocab_path, model_id, gpu, config,
+    )?;
+    println!("{}", serde_json::to_string(&parsed)?);
+    Ok(())
+}
+
+fn cmd_parakeet_benchmark(
+    binary: &str,
+    model_path: &Path,
+    audio_path: &Path,
+    vocab_path: &Path,
+    model_id: &str,
+    gpu: bool,
+    config: &Config,
+) -> Result<()> {
+    let started = std::time::Instant::now();
+    let direct = minutes_core::transcribe::run_parakeet_cli_structured(
+        binary, model_path, audio_path, vocab_path, model_id, gpu, config,
+    )?;
+    let direct_ms = started.elapsed().as_millis() as u64;
+
+    let helper_bin = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("minutes"));
+    let helper_started = std::time::Instant::now();
+    let helper = std::process::Command::new(helper_bin)
+        .arg("parakeet-helper")
+        .args(["--binary", binary])
+        .args([
+            "--model-path",
+            model_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("model path is not valid UTF-8"))?,
+        ])
+        .args([
+            "--audio-path",
+            audio_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("audio path is not valid UTF-8"))?,
+        ])
+        .args([
+            "--vocab-path",
+            vocab_path
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("vocab path is not valid UTF-8"))?,
+        ])
+        .args(["--model-id", model_id])
+        .args(if gpu { vec!["--gpu"] } else { Vec::new() })
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()?;
+    if !helper.status.success() {
+        anyhow::bail!(
+            "helper benchmark failed: {}",
+            String::from_utf8_lossy(&helper.stderr)
+        );
+    }
+    let helper_json: serde_json::Value = serde_json::from_slice(&helper.stdout)?;
+    let helper_ms = helper_started.elapsed().as_millis() as u64;
+
+    let report = serde_json::json!({
+        "model": model_id,
+        "gpu": gpu,
+        "direct_elapsed_ms": direct_ms,
+        "direct_segments": direct.segments.len(),
+        "helper_elapsed_ms": helper_ms,
+        "helper_segments": helper_json.get("segments").and_then(|v| v.as_array()).map(|v| v.len()).unwrap_or(0),
+    });
+    println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }
 

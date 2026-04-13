@@ -1,6 +1,8 @@
 use crate::config::Config;
 use crate::error::TranscribeError;
 #[cfg(feature = "parakeet")]
+use serde::{Deserialize, Serialize};
+#[cfg(feature = "parakeet")]
 use std::collections::HashSet;
 use std::path::Path;
 #[cfg(any(feature = "whisper", feature = "parakeet"))]
@@ -1055,8 +1057,6 @@ fn transcribe_with_parakeet(
     audio_path: &Path,
     config: &Config,
 ) -> Result<TranscribeResult, TranscribeError> {
-    use std::process::Command;
-
     let mut stats = FilterStats::default();
 
     // Validate model name before doing any work
@@ -1115,16 +1115,6 @@ fn transcribe_with_parakeet(
         "starting parakeet transcription"
     );
 
-    let model_str = model_path
-        .to_str()
-        .ok_or_else(|| TranscribeError::ParakeetFailed("model path is not valid UTF-8".into()))?;
-    let wav_str = tmp_wav.path().to_str().ok_or_else(|| {
-        TranscribeError::ParakeetFailed("temp WAV path is not valid UTF-8".into())
-    })?;
-    let vocab_str = vocab_path
-        .to_str()
-        .ok_or_else(|| TranscribeError::ParakeetFailed("vocab path is not valid UTF-8".into()))?;
-
     let invocation_started = Instant::now();
     let host_process_key = format!(
         "{}::{}",
@@ -1138,39 +1128,131 @@ fn transcribe_with_parakeet(
         seen.insert(host_process_key)
     };
 
-    let mut command = Command::new(binary);
-    command
-        .arg(model_str)
-        .arg(wav_str)
-        .args(["--vocab", vocab_str])
-        .args(["--model", &config.transcription.parakeet_model])
-        .arg("--timestamps");
-    if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
-        command.arg("--gpu");
-    }
-    let output = command
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .output()
-        .map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                TranscribeError::ParakeetNotFound
-            } else {
-                TranscribeError::ParakeetFailed(format!("spawn error: {}", e))
+    let use_gpu = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+    let helper_allowed = std::env::var_os("MINUTES_PARAKEET_FORCE_DIRECT").is_none()
+        && std::env::var_os("MINUTES_PARAKEET_HELPER_ACTIVE").is_none();
+    let parsed = if helper_allowed {
+        if let Some(helper_path) = resolve_minutes_parakeet_helper() {
+            let helper_output = std::process::Command::new(helper_path)
+                .arg("parakeet-helper")
+                .args(["--binary", binary])
+                .args([
+                    "--model-path",
+                    model_path.to_str().ok_or_else(|| {
+                        TranscribeError::ParakeetFailed("model path is not valid UTF-8".into())
+                    })?,
+                ])
+                .args([
+                    "--audio-path",
+                    tmp_wav.path().to_str().ok_or_else(|| {
+                        TranscribeError::ParakeetFailed("temp WAV path is not valid UTF-8".into())
+                    })?,
+                ])
+                .args([
+                    "--vocab-path",
+                    vocab_path.to_str().ok_or_else(|| {
+                        TranscribeError::ParakeetFailed("vocab path is not valid UTF-8".into())
+                    })?,
+                ])
+                .args(["--model-id", &config.transcription.parakeet_model])
+                .args(if use_gpu { vec!["--gpu"] } else { Vec::new() })
+                .env("MINUTES_PARAKEET_HELPER_ACTIVE", "1")
+                .stdout(std::process::Stdio::piped())
+                .stderr(std::process::Stdio::piped())
+                .output();
+
+            match helper_output {
+                Ok(output) if output.status.success() => serde_json::from_slice(&output.stdout)
+                    .map_err(|error| {
+                        TranscribeError::ParakeetFailed(format!(
+                            "failed to parse helper JSON output: {}",
+                            error
+                        ))
+                    })?,
+                Ok(output) => {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    run_parakeet_cli_structured(
+                        binary,
+                        &model_path,
+                        tmp_wav.path(),
+                        &vocab_path,
+                        &config.transcription.parakeet_model,
+                        use_gpu,
+                        config,
+                    )
+                    .or_else(|_| {
+                        Err(TranscribeError::ParakeetFailed(
+                            stderr
+                                .lines()
+                                .last()
+                                .unwrap_or("unknown helper error")
+                                .to_string(),
+                        ))
+                    })?
+                }
+                Err(_) => run_parakeet_cli_structured(
+                    binary,
+                    &model_path,
+                    tmp_wav.path(),
+                    &vocab_path,
+                    &config.transcription.parakeet_model,
+                    use_gpu,
+                    config,
+                )?,
             }
-        })?;
-    // tmp_wav auto-deletes on drop (NamedTempFile)
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(TranscribeError::ParakeetFailed(
-            stderr.lines().last().unwrap_or("unknown error").to_string(),
-        ));
-    }
-
-    // Step 5: Parse output and format as [M:SS] lines
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let (parsed, transcript, pstats) = parse_parakeet_output(&stdout, config)?;
+        } else {
+            run_parakeet_cli_structured(
+                binary,
+                &model_path,
+                tmp_wav.path(),
+                &vocab_path,
+                &config.transcription.parakeet_model,
+                use_gpu,
+                config,
+            )?
+        }
+    } else {
+        run_parakeet_cli_structured(
+            binary,
+            &model_path,
+            tmp_wav.path(),
+            &vocab_path,
+            &config.transcription.parakeet_model,
+            use_gpu,
+            config,
+        )?
+    };
+    let transcript = parsed.transcript.clone();
+    let pstats = {
+        let raw_segments = parsed.segments.len();
+        let lines: Vec<String> = parsed
+            .segments
+            .iter()
+            .map(|segment| {
+                let mins = (segment.start_secs / 60.0) as u64;
+                let secs = (segment.start_secs % 60.0) as u64;
+                format!("[{}:{:02}] {}", mins, secs, segment.text)
+            })
+            .collect();
+        let lines = dedup_segments(lines);
+        let after_dedup = lines.len();
+        let lines = dedup_interleaved(lines);
+        let after_interleaved = lines.len();
+        let lines = strip_foreign_script(lines);
+        let after_script_filter = lines.len();
+        let lines = collapse_noise_markers(lines);
+        let after_noise_markers = lines.len();
+        let lines = trim_trailing_noise(lines);
+        let after_trailing_trim = lines.len();
+        ParakeetFilterStats {
+            raw_segments,
+            after_dedup,
+            after_interleaved,
+            after_script_filter,
+            after_noise_markers,
+            after_trailing_trim,
+        }
+    };
     let elapsed_ms = invocation_started.elapsed().as_millis() as u64;
 
     stats.raw_segments = pstats.raw_segments;
@@ -1229,19 +1311,20 @@ struct ParakeetFilterStats {
 }
 
 #[cfg(feature = "parakeet")]
-#[derive(Debug, Clone)]
-struct ParakeetCliSegment {
-    start_secs: f64,
-    end_secs: f64,
-    confidence: Option<f32>,
-    text: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParakeetCliSegment {
+    pub start_secs: f64,
+    pub end_secs: f64,
+    pub confidence: Option<f32>,
+    pub text: String,
 }
 
 #[cfg(feature = "parakeet")]
-#[derive(Debug, Clone)]
-struct ParakeetCliTranscript {
-    raw_output: String,
-    segments: Vec<ParakeetCliSegment>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParakeetCliTranscript {
+    pub raw_output: String,
+    pub segments: Vec<ParakeetCliSegment>,
+    pub transcript: String,
 }
 
 #[cfg(feature = "parakeet")]
@@ -1251,11 +1334,146 @@ fn parakeet_seen_models() -> &'static Mutex<HashSet<String>> {
 }
 
 #[cfg(feature = "parakeet")]
+fn resolve_minutes_parakeet_helper() -> Option<PathBuf> {
+    if let Ok(explicit) = std::env::var("MINUTES_PARAKEET_HELPER") {
+        let path = PathBuf::from(explicit);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+
+    if let Ok(current) = std::env::current_exe() {
+        if current
+            .file_name()
+            .and_then(|value| value.to_str())
+            .map(|value| value == "minutes")
+            .unwrap_or(false)
+        {
+            return Some(current);
+        }
+    }
+
+    which::which("minutes").ok()
+}
+
+#[cfg(feature = "parakeet")]
 #[derive(Debug, Clone)]
 pub struct ParakeetWarmupStats {
     pub elapsed_ms: u64,
     pub model: String,
     pub used_gpu: bool,
+}
+
+#[cfg(feature = "parakeet")]
+fn group_parakeet_word_segments(words: &[ParakeetCliSegment]) -> Vec<ParakeetCliSegment> {
+    const GAP_THRESHOLD_SECS: f64 = 0.8;
+
+    let mut grouped = Vec::new();
+    let mut current: Option<ParakeetCliSegment> = None;
+
+    for word in words {
+        if word.text.chars().any(char::is_whitespace) {
+            if let Some(segment) = current.take() {
+                grouped.push(segment);
+            }
+            grouped.push(word.clone());
+            continue;
+        }
+
+        match current.as_mut() {
+            None => {
+                current = Some(word.clone());
+            }
+            Some(segment) => {
+                let gap = word.start_secs - segment.end_secs;
+                let ends_sentence = segment
+                    .text
+                    .chars()
+                    .last()
+                    .map(|c| matches!(c, '.' | '!' | '?' | '。' | '！' | '？'))
+                    .unwrap_or(false);
+
+                if gap > GAP_THRESHOLD_SECS || ends_sentence {
+                    grouped.push(segment.clone());
+                    current = Some(word.clone());
+                } else {
+                    if !segment.text.is_empty() {
+                        segment.text.push(' ');
+                    }
+                    segment.text.push_str(&word.text);
+                    segment.end_secs = word.end_secs;
+                    segment.confidence = match (segment.confidence, word.confidence) {
+                        (Some(left), Some(right)) => Some((left + right) / 2.0),
+                        (Some(left), None) => Some(left),
+                        (None, Some(right)) => Some(right),
+                        (None, None) => None,
+                    };
+                }
+            }
+        }
+    }
+
+    if let Some(segment) = current {
+        grouped.push(segment);
+    }
+
+    grouped
+}
+
+#[cfg(feature = "parakeet")]
+pub fn run_parakeet_cli_structured(
+    binary: &str,
+    model_path: &Path,
+    audio_path: &Path,
+    vocab_path: &Path,
+    model_id: &str,
+    use_gpu: bool,
+    config: &Config,
+) -> Result<ParakeetCliTranscript, TranscribeError> {
+    use std::process::Command;
+
+    let model_str = model_path
+        .to_str()
+        .ok_or_else(|| TranscribeError::ParakeetFailed("model path is not valid UTF-8".into()))?;
+    let wav_str = audio_path
+        .to_str()
+        .ok_or_else(|| TranscribeError::ParakeetFailed("audio path is not valid UTF-8".into()))?;
+    let vocab_str = vocab_path
+        .to_str()
+        .ok_or_else(|| TranscribeError::ParakeetFailed("vocab path is not valid UTF-8".into()))?;
+
+    let mut command = Command::new(binary);
+    command
+        .arg(model_str)
+        .arg(wav_str)
+        .args(["--vocab", vocab_str])
+        .args(["--model", model_id])
+        .arg("--timestamps");
+    if use_gpu {
+        command.arg("--gpu");
+    }
+    let output = command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()
+        .map_err(|e| {
+            if e.kind() == std::io::ErrorKind::NotFound {
+                TranscribeError::ParakeetNotFound
+            } else {
+                TranscribeError::ParakeetFailed(format!("spawn error: {}", e))
+            }
+        })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(TranscribeError::ParakeetFailed(
+            stderr.lines().last().unwrap_or("unknown error").to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let (parsed, _transcript, _stats) = parse_parakeet_output(&stdout, config)?;
+    Ok(parsed)
 }
 
 #[cfg(feature = "parakeet")]
@@ -1325,6 +1543,15 @@ fn parse_parakeet_output(
         // Non-timestamp line — skip (don't fake [0:00] timestamps)
     }
 
+    let segments = group_parakeet_word_segments(&segments);
+    let lines: Vec<String> = segments
+        .iter()
+        .map(|segment| {
+            let mins = (segment.start_secs / 60.0) as u64;
+            let secs = (segment.start_secs % 60.0) as u64;
+            format!("[{}:{:02}] {}", mins, secs, segment.text)
+        })
+        .collect();
     let raw_segments = lines.len();
 
     if lines.is_empty() {
@@ -1369,12 +1596,14 @@ fn parse_parakeet_output(
             config.transcription.min_words,
         ));
     }
+    let transcript_with_newline = format!("{}\n", transcript);
     Ok((
         ParakeetCliTranscript {
             raw_output: raw.to_string(),
             segments,
+            transcript: transcript_with_newline.clone(),
         },
-        format!("{}\n", transcript),
+        transcript_with_newline,
         pstats,
     ))
 }
@@ -1889,6 +2118,22 @@ mod tests {
             lines
         );
         assert!(lines.last().unwrap().contains("Something different"));
+    }
+
+    #[test]
+    #[cfg(feature = "parakeet")]
+    fn parse_parakeet_groups_word_level_segments() {
+        let text = "\
+[0.00s - 0.10s] (0.90) Hello\n\
+[0.11s - 0.20s] (0.90) world.\n\
+[1.40s - 1.50s] (0.80) Next\n\
+[1.51s - 1.60s] (0.80) sentence\n";
+        let config = Config::default();
+        let (_parsed, result, _) = parse_parakeet_output(text, &config).unwrap();
+        let lines: Vec<&str> = result.trim().lines().collect();
+        assert_eq!(lines.len(), 2, "expected two grouped segments: {:?}", lines);
+        assert!(lines[0].contains("Hello world."));
+        assert!(lines[1].contains("Next sentence"));
     }
 
     #[test]
