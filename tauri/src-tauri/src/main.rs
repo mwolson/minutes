@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use minutes_core::Config;
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{
@@ -455,6 +456,52 @@ fn refresh_calendar_items(
     }
 }
 
+fn should_refresh_meetings_for_paths(paths: &[std::path::PathBuf]) -> bool {
+    paths.iter().any(|path| {
+        path.extension()
+            .and_then(|ext| ext.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("md"))
+            .unwrap_or(false)
+    })
+}
+
+fn spawn_meetings_refresh_watcher(app: &tauri::AppHandle, output_dir: std::path::PathBuf) {
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut watcher: RecommendedWatcher = match notify::recommended_watcher(move |result| {
+            let _ = tx.send(result);
+        }) {
+            Ok(watcher) => watcher,
+            Err(error) => {
+                eprintln!("[meetings-watcher] failed to create watcher: {}", error);
+                return;
+            }
+        };
+
+        if let Err(error) = watcher.watch(&output_dir, RecursiveMode::Recursive) {
+            eprintln!(
+                "[meetings-watcher] failed to watch {}: {}",
+                output_dir.display(),
+                error
+            );
+            return;
+        }
+
+        for event in rx {
+            match event {
+                Ok(event) if should_refresh_meetings_for_paths(&event.paths) => {
+                    let _ = app_handle.emit("artifacts:changed", ());
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    eprintln!("[meetings-watcher] watch error: {}", error);
+                }
+            }
+        }
+    });
+}
+
 fn main() {
     #[cfg(target_os = "macos")]
     if let Some(code) = maybe_run_hotkey_diagnostic() {
@@ -656,6 +703,8 @@ fn main() {
         .setup(move |app| {
             let initial_recording = minutes_core::pid::status().recording;
             let startup_config = minutes_core::config::Config::load();
+
+            spawn_meetings_refresh_watcher(app.handle(), startup_config.output_dir.clone());
 
             // Clean up stale terminal workspaces from previous sessions
             context::cleanup_stale_workspaces();

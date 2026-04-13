@@ -3100,6 +3100,7 @@ dependencies = [
  "dirs 6.0.0",
  "libc",
  "minutes-core",
+ "notify",
  "notify-rust",
  "portable-pty",
  "serde",

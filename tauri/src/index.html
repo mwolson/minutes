@@ -4481,6 +4481,7 @@
     // Live bar elements are accessed by ID inline (live-time, live-utterances)
     let currentMeetingDetail = null;
     let activeSearchQuery = '';
+    let meetingsRefreshTimer = null;
     let currentSetup = null;
     let activationState = null;
     let proactiveContextBundle = null;
@@ -6356,6 +6357,33 @@
       }
     }
 
+    async function refreshMeetingsForCurrentView() {
+      if (activeSearchQuery) {
+        try {
+          const results = await invoke('cmd_search', { query: activeSearchQuery });
+          renderMeetings(results);
+          if (currentMeetingDetail && detailOverlay.classList.contains('active')) {
+            renderDetailSections(currentMeetingDetail);
+          }
+        } catch (e) {
+          console.error('Search refresh:', e);
+        }
+        return;
+      }
+      await loadMeetings();
+      if (currentMeetingDetail && detailOverlay.classList.contains('active')) {
+        renderDetailSections(currentMeetingDetail);
+      }
+    }
+
+    function scheduleMeetingsRefresh(delay = 350) {
+      if (meetingsRefreshTimer) clearTimeout(meetingsRefreshTimer);
+      meetingsRefreshTimer = setTimeout(() => {
+        meetingsRefreshTimer = null;
+        refreshMeetingsForCurrentView();
+      }, delay);
+    }
+
     // ── Search ──
     let searchTimeout;
     searchInput.addEventListener('input', (e) => {
@@ -6363,10 +6391,7 @@
       const query = e.target.value.trim();
       activeSearchQuery = query;
       if (!query) {
-        loadMeetings();
-        if (currentMeetingDetail && detailOverlay.classList.contains('active')) {
-          renderDetailSections(currentMeetingDetail);
-        }
+        scheduleMeetingsRefresh(0);
         return;
       }
       searchTimeout = setTimeout(async () => {
@@ -8289,6 +8314,10 @@
       if (noticeTitle) noticeTitle.textContent = 'Live transcript stopped unexpectedly';
       if (noticeDetail) noticeDetail.textContent = errMsg;
       if (notice) notice.classList.add('active');
+    });
+
+    currentWindow.listen('artifacts:changed', () => {
+      scheduleMeetingsRefresh();
     });
 
     // ── Listen for recall:expand events from Rust backend ──
