@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "parakeet")]
 use std::collections::HashSet;
 use std::path::Path;
-#[cfg(any(feature = "whisper", feature = "parakeet"))]
 use std::path::PathBuf;
 #[cfg(feature = "parakeet")]
 use std::sync::{Mutex, OnceLock};
@@ -167,6 +166,19 @@ fn transcribe_dispatch(
     }
 }
 
+fn temp_wav_path(prefix: &str) -> Result<PathBuf, TranscribeError> {
+    let unique = format!(
+        "{}-{}-{}.wav",
+        prefix,
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos()
+    );
+    Ok(std::env::temp_dir().join(unique))
+}
+
 /// Meeting-specialized transcription path that can split long recordings at
 /// natural pauses before dispatching to the active ASR backend.
 pub fn transcribe_meeting(
@@ -201,14 +213,10 @@ pub fn transcribe_meeting(
             continue;
         }
 
-        let tmp_wav = tempfile::Builder::new()
-            .prefix("minutes-meeting-chunk-")
-            .suffix(".wav")
-            .tempfile()
-            .map_err(TranscribeError::Io)?;
-        write_wav_16k_mono(tmp_wav.path(), chunk_samples)?;
+        let tmp_wav = temp_wav_path("minutes-meeting-chunk")?;
+        write_wav_16k_mono(&tmp_wav, chunk_samples)?;
 
-        let chunk_result = match transcribe_dispatch(tmp_wav.path(), config) {
+        let chunk_result = match transcribe_dispatch(&tmp_wav, config) {
             Ok(result) => result,
             Err(TranscribeError::EmptyAudio) | Err(TranscribeError::EmptyTranscript(_)) => {
                 tracing::debug!(
@@ -217,13 +225,18 @@ pub fn transcribe_meeting(
                     end_sample,
                     "skipping empty VAD chunk"
                 );
+                let _ = std::fs::remove_file(&tmp_wav);
                 continue;
             }
-            Err(error) => return Err(error),
+            Err(error) => {
+                let _ = std::fs::remove_file(&tmp_wav);
+                return Err(error);
+            }
         };
         let chunk_offset_secs = *start_sample as f64 / 16000.0;
         let offset_lines =
             offset_timestamped_lines(chunk_result.text.lines(), chunk_offset_secs, chunk_index);
+        let _ = std::fs::remove_file(&tmp_wav);
 
         aggregate.samples_after_silence_strip += chunk_result.stats.samples_after_silence_strip;
         aggregate.raw_segments += chunk_result.stats.raw_segments;
@@ -1869,7 +1882,6 @@ fn parse_parakeet_output(
 }
 
 /// Write f32 samples as a 16kHz mono 16-bit WAV file.
-#[cfg(feature = "parakeet")]
 fn write_wav_16k_mono(path: &Path, samples: &[f32]) -> Result<(), TranscribeError> {
     let spec = hound::WavSpec {
         channels: 1,

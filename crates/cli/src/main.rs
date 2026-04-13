@@ -39,6 +39,7 @@ struct JsonEnvelope<T: Serialize> {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg(feature = "parakeet")]
 struct ParakeetHelperEnvelope<T: Serialize> {
     ok: bool,
     command: String,
@@ -63,6 +64,7 @@ fn json_envelope<T: Serialize>(command: &str, data: T) -> JsonEnvelope<T> {
     }
 }
 
+#[cfg(feature = "parakeet")]
 fn parakeet_helper_envelope<T: Serialize>(
     command: &str,
     transcript: T,
