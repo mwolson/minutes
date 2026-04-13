@@ -2,6 +2,7 @@ use anyhow::Result;
 use chrono::{Local, TimeZone};
 use clap::{Parser, Subcommand};
 use minutes_core::capture::RecordingIntent;
+use minutes_core::config::VALID_PARAKEET_MODELS;
 use minutes_core::{CaptureMode, Config, ContentType};
 use serde::Serialize;
 
@@ -2805,7 +2806,7 @@ fn cmd_setup(model: &str, list: bool, diarization: bool) -> Result<()> {
         eprintln!();
         eprintln!("Parakeet models (alternative engine, --parakeet):");
         eprintln!("  tdt-ctc-110m  ~220 MB   (English, fast, default)");
-        eprintln!("  tdt-600m      ~1.2 GB   (multilingual, 25 EU languages, best quality)");
+        eprintln!("  tdt-600m      ~1.2 GB   (multilingual v3, 25 EU languages, best quality)");
         return Ok(());
     }
 
@@ -2935,7 +2936,7 @@ fn cmd_setup_diarization() -> Result<()> {
 /// converted to safetensors format using parakeet.cpp's convert_nemo.py script.
 /// This command prints the steps needed and checks for existing files.
 fn cmd_setup_parakeet(model: &str) -> Result<()> {
-    let valid_models = ["tdt-ctc-110m", "tdt-600m"];
+    let valid_models = VALID_PARAKEET_MODELS;
     if !valid_models.contains(&model) {
         anyhow::bail!(
             "unknown parakeet model: {}. Available: {}",
@@ -2949,7 +2950,8 @@ fn cmd_setup_parakeet(model: &str) -> Result<()> {
     std::fs::create_dir_all(&model_dir)?;
 
     let dest_model = model_dir.join(format!("{}.safetensors", model));
-    let dest_vocab = model_dir.join("vocab.txt");
+    let dest_vocab_name = format!("{}.tokenizer.vocab", model);
+    let dest_vocab = model_dir.join(&dest_vocab_name);
 
     // Map model name to HuggingFace repo
     let hf_repo = match model {
@@ -2982,18 +2984,19 @@ fn cmd_setup_parakeet(model: &str) -> Result<()> {
         eprintln!();
         eprintln!("  Step 2: Download the .nemo model from HuggingFace");
         eprintln!(
-            "    huggingface-cli download {} --include '*.nemo' --local-dir .",
+            "    hf download {} --include '*.nemo' --local-dir .",
             hf_repo
         );
         eprintln!();
-        eprintln!("  Step 3: Convert to safetensors (generates model + vocab)");
+        eprintln!("  Step 3: Convert to safetensors");
         eprintln!(
             "    python scripts/convert_nemo.py *.nemo -o {}",
             dest_model.display()
         );
         eprintln!();
-        eprintln!("  Step 4: Copy the vocab file");
-        eprintln!("    cp vocab.txt {}", dest_vocab.display());
+        eprintln!("  Step 4: Extract the SentencePiece tokenizer vocab");
+        eprintln!("    tar xf *.nemo --wildcards --no-anchored '*tokenizer.vocab'");
+        eprintln!("    cp *_tokenizer.vocab {}", dest_vocab.display());
         eprintln!();
         eprintln!("  Step 5: Build and install the parakeet binary");
         eprintln!("    mkdir build && cd build && cmake .. && make -j");
@@ -3036,6 +3039,7 @@ fn cmd_setup_parakeet(model: &str) -> Result<()> {
     eprintln!("  [transcription]");
     eprintln!("  engine = \"parakeet\"");
     eprintln!("  parakeet_model = \"{}\"", model);
+    eprintln!("  parakeet_vocab = \"{}\"", dest_vocab_name);
 
     Ok(())
 }

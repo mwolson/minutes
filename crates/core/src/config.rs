@@ -112,8 +112,31 @@ pub struct TranscriptionConfig {
     pub parakeet_binary: String,
     /// Parakeet model type: "tdt-ctc-110m", "tdt-600m".
     pub parakeet_model: String,
-    /// SentencePiece vocab filename (resolved under model_path/parakeet/, e.g. "vocab.txt").
+    /// SentencePiece vocab filename (resolved under model_path/parakeet/).
+    ///
+    /// If left at the default generic name, Minutes still prefers model-specific
+    /// tokenizer files such as `tdt-ctc-110m.tokenizer.vocab` when they exist.
     pub parakeet_vocab: String,
+}
+
+pub const VALID_PARAKEET_MODELS: &[&str] = &["tdt-ctc-110m", "tdt-600m"];
+
+pub fn parakeet_model_tokenizer_candidates(model: &str) -> &'static [&'static str] {
+    match model {
+        "tdt-ctc-110m" => &[
+            "tdt-ctc-110m.tokenizer.vocab",
+            "tdt-ctc-110m.vocab",
+            "tokenizer.vocab",
+            "vocab.txt",
+        ],
+        "tdt-600m" => &[
+            "tdt-600m.tokenizer.vocab",
+            "tdt-600m.vocab",
+            "tokenizer.vocab",
+            "vocab.txt",
+        ],
+        _ => &["tokenizer.vocab", "vocab.txt"],
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -530,7 +553,7 @@ impl Default for TranscriptionConfig {
             noise_reduction: true,
             parakeet_binary: "parakeet".into(),
             parakeet_model: "tdt-ctc-110m".into(),
-            parakeet_vocab: "vocab.txt".into(),
+            parakeet_vocab: "tokenizer.vocab".into(),
         }
     }
 }
@@ -859,7 +882,7 @@ mod tests {
         assert_eq!(config.transcription.min_words, 3);
         assert_eq!(config.transcription.parakeet_binary, "parakeet");
         assert_eq!(config.transcription.parakeet_model, "tdt-ctc-110m");
-        assert_eq!(config.transcription.parakeet_vocab, "vocab.txt");
+        assert_eq!(config.transcription.parakeet_vocab, "tokenizer.vocab");
         assert_eq!(config.diarization.engine, "auto");
         assert_eq!(config.summarization.engine, "auto");
         assert_eq!(config.search.engine, "builtin");

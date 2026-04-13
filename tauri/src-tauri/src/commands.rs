@@ -1,5 +1,6 @@
 use crate::call_capture;
 use minutes_core::capture::RecordingIntent;
+use minutes_core::config::{parakeet_model_tokenizer_candidates, VALID_PARAKEET_MODELS};
 use minutes_core::{CaptureMode, Config, ContentType};
 use std::cmp::Reverse;
 use std::collections::hash_map::DefaultHasher;
@@ -51,6 +52,41 @@ pub struct AppState {
     /// Set when a hotkey press lands in the `Closing` state. The close path
     /// drains this flag on completion and re-opens the palette if it was set.
     pub palette_reopen_pending: Arc<AtomicBool>,
+}
+
+fn resolve_parakeet_model_asset(config: &Config) -> Option<PathBuf> {
+    let model_dir = config.transcription.model_path.join("parakeet");
+    let model_name = &config.transcription.parakeet_model;
+    let candidates = [
+        model_dir.join(format!("{}.safetensors", model_name)),
+        model_dir.join(format!("parakeet-{}.safetensors", model_name)),
+        model_dir.join("model.safetensors"),
+    ];
+    candidates.into_iter().find(|candidate| candidate.exists())
+}
+
+fn resolve_parakeet_tokenizer_asset(config: &Config) -> Option<PathBuf> {
+    let model_dir = config.transcription.model_path.join("parakeet");
+    let configured_vocab = config.transcription.parakeet_vocab.as_str();
+    let using_generic_name = matches!(configured_vocab, "" | "tokenizer.vocab" | "vocab.txt");
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if !using_generic_name {
+        candidates.push(model_dir.join(configured_vocab));
+    }
+    for candidate_name in parakeet_model_tokenizer_candidates(&config.transcription.parakeet_model)
+    {
+        let candidate = model_dir.join(candidate_name);
+        if !candidates.iter().any(|existing| existing == &candidate) {
+            candidates.push(candidate);
+        }
+    }
+    if using_generic_name {
+        let configured = model_dir.join(configured_vocab);
+        if !candidates.iter().any(|existing| existing == &configured) {
+            candidates.push(configured);
+        }
+    }
+    candidates.into_iter().find(|candidate| candidate.exists())
 }
 
 /// Lifecycle state for the palette overlay window.
@@ -2345,6 +2381,52 @@ fn build_artifact_template(
 }
 
 fn model_status(config: &Config) -> ReadinessItem {
+    if config.transcription.engine == "parakeet" {
+        let binary = &config.transcription.parakeet_binary;
+        let binary_found = which::which(binary).is_ok();
+        let model_name = &config.transcription.parakeet_model;
+        let resolved_model = resolve_parakeet_model_asset(config);
+        let resolved_vocab = resolve_parakeet_tokenizer_asset(config);
+        let model_found = resolved_model.is_some();
+        let vocab_found = resolved_vocab.is_some();
+        let all_ready = binary_found && model_found && vocab_found;
+
+        let mut issues = Vec::new();
+        if !binary_found {
+            issues.push(format!("binary '{}' not in PATH", binary));
+        }
+        if !model_found {
+            issues.push(format!("model {}.safetensors not found", model_name));
+        }
+        if !vocab_found {
+            issues.push("SentencePiece tokenizer not found".into());
+        }
+
+        return ReadinessItem {
+            label: "Speech model".into(),
+            state: if all_ready { "ready" } else { "attention" }.into(),
+            detail: if all_ready {
+                let tokenizer_label = resolved_vocab
+                    .and_then(|path| {
+                        path.file_name()
+                            .and_then(|name| name.to_str())
+                            .map(|name| name.to_string())
+                    })
+                    .unwrap_or_else(|| "unknown".to_string());
+                format!(
+                    "Parakeet engine ({}) ready. Model: {}. Tokenizer: {}.",
+                    binary, model_name, tokenizer_label
+                )
+            } else {
+                format!(
+                    "Parakeet not ready: {}. Run: minutes setup --parakeet",
+                    issues.join(", ")
+                )
+            },
+            optional: false,
+        };
+    }
+
     let model_name = &config.transcription.model;
     let model_file = config
         .transcription
@@ -4663,11 +4745,22 @@ pub async fn cmd_upcoming_meetings() -> serde_json::Value {
 pub fn cmd_needs_setup(state: tauri::State<AppState>) -> serde_json::Value {
     let config = Config::load();
     let model_name = &config.transcription.model;
-    let model_file = model_file_for_config(&config);
-    let has_model = model_file.exists();
-    if has_model {
-        mark_activation_model_ready(&state.activation_progress, &model_file);
-    }
+    let has_model = if config.transcription.engine == "parakeet" {
+        let binary_path = which::which(&config.transcription.parakeet_binary).ok();
+        if let Some(binary_path) = binary_path.as_ref() {
+            mark_activation_model_ready(&state.activation_progress, binary_path);
+        }
+        binary_path.is_some()
+            && resolve_parakeet_model_asset(&config).is_some()
+            && resolve_parakeet_tokenizer_asset(&config).is_some()
+    } else {
+        let model_file = model_file_for_config(&config);
+        let exists = model_file.exists();
+        if exists {
+            mark_activation_model_ready(&state.activation_progress, &model_file);
+        }
+        exists
+    };
 
     let meetings_dir = config.output_dir.clone();
     let has_meetings_dir = meetings_dir.exists();
@@ -5102,9 +5195,13 @@ pub fn cmd_get_settings() -> serde_json::Value {
             "device": config.recording.device,
         },
         "transcription": {
+            "engine": config.transcription.engine,
             "model": config.transcription.model,
             "downloaded_models": downloaded_models,
             "language": config.transcription.language,
+            "parakeet_model": config.transcription.parakeet_model,
+            "parakeet_binary": config.transcription.parakeet_binary,
+            "parakeet_compiled": cfg!(feature = "parakeet"),
         },
         "diarization": {
             "engine": config.diarization.engine,
@@ -5163,7 +5260,27 @@ pub fn cmd_set_setting(section: String, key: String, value: String) -> Result<St
 
     match (section.as_str(), key.as_str()) {
         // Transcription
+        ("transcription", "engine") => {
+            if !["whisper", "parakeet"].contains(&value.as_str()) {
+                return Err(format!(
+                    "unknown transcription engine '{}'. Valid: whisper, parakeet",
+                    value
+                ));
+            }
+            config.transcription.engine = value.clone();
+        }
         ("transcription", "model") => config.transcription.model = value.clone(),
+        ("transcription", "parakeet_model") => {
+            if !VALID_PARAKEET_MODELS.contains(&value.as_str()) {
+                return Err(format!(
+                    "unknown parakeet model '{}'. Valid: {}",
+                    value,
+                    VALID_PARAKEET_MODELS.join(", ")
+                ));
+            }
+            config.transcription.parakeet_model = value.clone();
+            config.transcription.parakeet_vocab = format!("{}.tokenizer.vocab", value);
+        }
         ("transcription", "language") => {
             config.transcription.language = parse_optional_string_setting(&value);
         }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,36 +12,42 @@
       font-weight: 400;
       src: url('fonts/InstrumentSerif-Regular.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Instrument Serif';
       font-style: italic;
       font-weight: 400;
       src: url('fonts/InstrumentSerif-Italic.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Geist';
       font-style: normal;
       font-weight: 400;
       src: url('fonts/Geist-Regular.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Geist';
       font-style: normal;
       font-weight: 500;
       src: url('fonts/Geist-Medium.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Geist';
       font-style: normal;
       font-weight: 600;
       src: url('fonts/Geist-SemiBold.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Geist Mono';
       font-style: normal;
       font-weight: 400;
       src: url('fonts/GeistMono-Regular.woff2') format('woff2');
     }
+
     @font-face {
       font-family: 'Geist Mono';
       font-style: normal;
@@ -48,148 +55,152 @@
       src: url('fonts/GeistMono-Medium.woff2') format('woff2');
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
     :root {
       color-scheme: light dark;
-      --bg:          #0D0D0B;
+      --bg: #0D0D0B;
       --bg-elevated: #141412;
-      --bg-hover:    #1C1C1A;
-      --border:      rgba(255,255,255,0.06);
-      --border-mid:  #2A2924;
-      --text:        #E8E4DA;
+      --bg-hover: #1C1C1A;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-mid: #2A2924;
+      --text: #E8E4DA;
       --text-secondary: #6B6760;
-      --text-tertiary:  #3D3B38;
-      --accent:      #30D158;
+      --text-tertiary: #3D3B38;
+      --accent: #30D158;
       --accent-hover: #4ADE70;
-      --accent-soft: rgba(48,209,88,0.10);
-      --red:         #FF453A;
-      --red-bg:      rgba(255,69,58,0.12);
-      --green:       #30D158;
-      --live:        #30D158;
-      --purple:      #BF5AF2;
-      --orange:      #D4832A;
-      --purple-solid-soft: rgba(155,133,196,0.70);
-      --purple-solid-strong: rgba(155,133,196,0.85);
-      --accent-tint: rgba(48,209,88,0.12);
-      --accent-tint-soft: rgba(48,209,88,0.06);
-      --accent-border: rgba(48,209,88,0.15);
-      --accent-border-strong: rgba(48,209,88,0.40);
-      --green-tint: rgba(48,209,88,0.12);
-      --green-tint-soft: rgba(48,209,88,0.06);
-      --green-border: rgba(48,209,88,0.12);
-      --green-border-soft: rgba(48,209,88,0.08);
-      --green-glow: rgba(48,209,88,0.28);
-      --green-glow-soft: rgba(48,209,88,0.18);
-      --green-solid-soft: rgba(48,209,88,0.70);
-      --green-solid-strong: rgba(48,209,88,0.85);
-      --red-tint: rgba(255,69,58,0.12);
-      --red-tint-soft: rgba(255,69,58,0.06);
-      --red-border: rgba(255,69,58,0.10);
-      --red-border-strong: rgba(255,69,58,0.30);
-      --red-border-stronger: rgba(255,69,58,0.50);
-      --red-tint-strong: rgba(255,69,58,0.20);
-      --red-tint-stronger: rgba(255,69,58,0.25);
-      --red-glow-soft: rgba(255,69,58,0.04);
-      --orange-tint: rgba(212,160,60,0.12);
-      --orange-tint-soft: rgba(212,160,60,0.08);
-      --orange-border: rgba(212,160,60,0.16);
-      --shadow-color: rgba(0,0,0,0.34);
-      --shadow-soft: rgba(0,0,0,0.12);
-      --shadow-strong: rgba(0,0,0,0.40);
-      --shadow-stronger: rgba(0,0,0,0.42);
-      --inset-highlight: rgba(255,255,255,0.04);
-      --surface-stroke-subtle: rgba(255,255,255,0.04);
-      --surface-fill: rgba(255,255,255,0.03);
-      --surface-fill-hover: rgba(255,255,255,0.05);
-      --surface-fill-strong: rgba(255,255,255,0.08);
-      --surface-fill-stronger: rgba(255,255,255,0.14);
-      --surface-fill-strongest: rgba(255,255,255,0.25);
-      --surface-fill-strongest-hover: rgba(255,255,255,0.35);
-      --neutral-tint: rgba(255,255,255,0.06);
-      --neutral-tint-soft: rgba(255,255,255,0.05);
-      --neutral-border: rgba(255,255,255,0.08);
-      --overlay-scrim: rgba(10,10,12,0.68);
-      --modal-scrim: rgba(8,10,16,0.66);
-      --focus-ring: rgba(48,209,88,0.20);
-      --focus-ring-soft: rgba(48,209,88,0.12);
-      --focus-ring-subtle: rgba(48,209,88,0.08);
-      --info-ring: rgba(98,188,233,0.35);
-      --muted-badge: rgba(142,142,147,0.15);
+      --accent-soft: rgba(48, 209, 88, 0.10);
+      --red: #FF453A;
+      --red-bg: rgba(255, 69, 58, 0.12);
+      --green: #30D158;
+      --live: #30D158;
+      --purple: #BF5AF2;
+      --orange: #D4832A;
+      --purple-solid-soft: rgba(155, 133, 196, 0.70);
+      --purple-solid-strong: rgba(155, 133, 196, 0.85);
+      --accent-tint: rgba(48, 209, 88, 0.12);
+      --accent-tint-soft: rgba(48, 209, 88, 0.06);
+      --accent-border: rgba(48, 209, 88, 0.15);
+      --accent-border-strong: rgba(48, 209, 88, 0.40);
+      --green-tint: rgba(48, 209, 88, 0.12);
+      --green-tint-soft: rgba(48, 209, 88, 0.06);
+      --green-border: rgba(48, 209, 88, 0.12);
+      --green-border-soft: rgba(48, 209, 88, 0.08);
+      --green-glow: rgba(48, 209, 88, 0.28);
+      --green-glow-soft: rgba(48, 209, 88, 0.18);
+      --green-solid-soft: rgba(48, 209, 88, 0.70);
+      --green-solid-strong: rgba(48, 209, 88, 0.85);
+      --red-tint: rgba(255, 69, 58, 0.12);
+      --red-tint-soft: rgba(255, 69, 58, 0.06);
+      --red-border: rgba(255, 69, 58, 0.10);
+      --red-border-strong: rgba(255, 69, 58, 0.30);
+      --red-border-stronger: rgba(255, 69, 58, 0.50);
+      --red-tint-strong: rgba(255, 69, 58, 0.20);
+      --red-tint-stronger: rgba(255, 69, 58, 0.25);
+      --red-glow-soft: rgba(255, 69, 58, 0.04);
+      --orange-tint: rgba(212, 160, 60, 0.12);
+      --orange-tint-soft: rgba(212, 160, 60, 0.08);
+      --orange-border: rgba(212, 160, 60, 0.16);
+      --shadow-color: rgba(0, 0, 0, 0.34);
+      --shadow-soft: rgba(0, 0, 0, 0.12);
+      --shadow-strong: rgba(0, 0, 0, 0.40);
+      --shadow-stronger: rgba(0, 0, 0, 0.42);
+      --inset-highlight: rgba(255, 255, 255, 0.04);
+      --surface-stroke-subtle: rgba(255, 255, 255, 0.04);
+      --surface-fill: rgba(255, 255, 255, 0.03);
+      --surface-fill-hover: rgba(255, 255, 255, 0.05);
+      --surface-fill-strong: rgba(255, 255, 255, 0.08);
+      --surface-fill-stronger: rgba(255, 255, 255, 0.14);
+      --surface-fill-strongest: rgba(255, 255, 255, 0.25);
+      --surface-fill-strongest-hover: rgba(255, 255, 255, 0.35);
+      --neutral-tint: rgba(255, 255, 255, 0.06);
+      --neutral-tint-soft: rgba(255, 255, 255, 0.05);
+      --neutral-border: rgba(255, 255, 255, 0.08);
+      --overlay-scrim: rgba(10, 10, 12, 0.68);
+      --modal-scrim: rgba(8, 10, 16, 0.66);
+      --focus-ring: rgba(48, 209, 88, 0.20);
+      --focus-ring-soft: rgba(48, 209, 88, 0.12);
+      --focus-ring-subtle: rgba(48, 209, 88, 0.08);
+      --info-ring: rgba(98, 188, 233, 0.35);
+      --muted-badge: rgba(142, 142, 147, 0.15);
       --success-contrast: #0D0D0B;
-      --radius:      8px;
-      --radius-lg:   10px;
-      --font-sans:   'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius: 8px;
+      --radius-lg: 10px;
+      --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
       --font-display: 'Instrument Serif', ui-serif, 'Iowan Old Style', Georgia, serif;
-      --font-mono:   'Geist Mono', 'SF Mono', 'Menlo', monospace;
+      --font-mono: 'Geist Mono', 'SF Mono', 'Menlo', monospace;
     }
 
     @media (prefers-color-scheme: light) {
       :root {
-        --bg:             #F8F4ED;
-        --bg-elevated:    #EFEBE2;
-        --bg-hover:       #E8E2D8;
-        --border:         rgba(0,0,0,0.07);
-        --border-mid:     rgba(0,0,0,0.13);
-        --text:           #1A1916;
+        --bg: #F8F4ED;
+        --bg-elevated: #EFEBE2;
+        --bg-hover: #E8E2D8;
+        --border: rgba(0, 0, 0, 0.07);
+        --border-mid: rgba(0, 0, 0, 0.13);
+        --text: #1A1916;
         --text-secondary: #8C8880;
-        --text-tertiary:  #BDB9B0;
-        --accent:         #C96B4E;
-        --accent-hover:   #B85A3E;
-        --accent-soft:    rgba(201,107,78,0.10);
-        --red:            #C0392B;
-        --red-bg:         rgba(192,57,43,0.12);
-        --green:          #2E7D46;
-        --live:           #2E7D46;
-        --purple:         #8B5CF6;
-        --orange:         #B8731E;
-        --purple-solid-soft: rgba(139,92,246,0.58);
-        --purple-solid-strong: rgba(139,92,246,0.72);
-        --accent-tint: rgba(201,107,78,0.10);
-        --accent-tint-soft: rgba(201,107,78,0.05);
-        --accent-border: rgba(201,107,78,0.15);
-        --accent-border-strong: rgba(201,107,78,0.28);
-        --green-tint: rgba(46,125,70,0.10);
-        --green-tint-soft: rgba(46,125,70,0.06);
-        --green-border: rgba(46,125,70,0.14);
-        --green-border-soft: rgba(46,125,70,0.10);
-        --green-glow: rgba(46,125,70,0.22);
-        --green-glow-soft: rgba(46,125,70,0.14);
-        --green-solid-soft: rgba(46,125,70,0.72);
-        --green-solid-strong: rgba(46,125,70,0.84);
-        --red-tint: rgba(192,57,43,0.10);
-        --red-tint-soft: rgba(192,57,43,0.05);
-        --red-border: rgba(192,57,43,0.10);
-        --red-border-strong: rgba(192,57,43,0.24);
-        --red-border-stronger: rgba(192,57,43,0.38);
-        --red-tint-strong: rgba(192,57,43,0.15);
-        --red-tint-stronger: rgba(192,57,43,0.20);
-        --red-glow-soft: rgba(192,57,43,0.06);
-        --orange-tint: rgba(184,115,30,0.10);
-        --orange-tint-soft: rgba(184,115,30,0.06);
-        --orange-border: rgba(184,115,30,0.16);
-        --shadow-color: rgba(0,0,0,0.12);
-        --shadow-soft: rgba(0,0,0,0.08);
-        --shadow-strong: rgba(0,0,0,0.16);
-        --shadow-stronger: rgba(0,0,0,0.18);
-        --inset-highlight: rgba(0,0,0,0.03);
-        --surface-stroke-subtle: rgba(0,0,0,0.06);
-        --surface-fill: rgba(0,0,0,0.03);
-        --surface-fill-hover: rgba(0,0,0,0.05);
-        --surface-fill-strong: rgba(0,0,0,0.08);
-        --surface-fill-stronger: rgba(0,0,0,0.12);
-        --surface-fill-strongest: rgba(0,0,0,0.18);
-        --surface-fill-strongest-hover: rgba(0,0,0,0.24);
-        --neutral-tint: rgba(0,0,0,0.06);
-        --neutral-tint-soft: rgba(0,0,0,0.04);
-        --neutral-border: rgba(0,0,0,0.10);
-        --overlay-scrim: rgba(248,244,237,0.78);
-        --modal-scrim: rgba(248,244,237,0.82);
-        --focus-ring: rgba(201,107,78,0.16);
-        --focus-ring-soft: rgba(201,107,78,0.10);
-        --focus-ring-subtle: rgba(201,107,78,0.07);
-        --info-ring: rgba(98,188,233,0.24);
-        --muted-badge: rgba(140,136,128,0.16);
+        --text-tertiary: #BDB9B0;
+        --accent: #C96B4E;
+        --accent-hover: #B85A3E;
+        --accent-soft: rgba(201, 107, 78, 0.10);
+        --red: #C0392B;
+        --red-bg: rgba(192, 57, 43, 0.12);
+        --green: #2E7D46;
+        --live: #2E7D46;
+        --purple: #8B5CF6;
+        --orange: #B8731E;
+        --purple-solid-soft: rgba(139, 92, 246, 0.58);
+        --purple-solid-strong: rgba(139, 92, 246, 0.72);
+        --accent-tint: rgba(201, 107, 78, 0.10);
+        --accent-tint-soft: rgba(201, 107, 78, 0.05);
+        --accent-border: rgba(201, 107, 78, 0.15);
+        --accent-border-strong: rgba(201, 107, 78, 0.28);
+        --green-tint: rgba(46, 125, 70, 0.10);
+        --green-tint-soft: rgba(46, 125, 70, 0.06);
+        --green-border: rgba(46, 125, 70, 0.14);
+        --green-border-soft: rgba(46, 125, 70, 0.10);
+        --green-glow: rgba(46, 125, 70, 0.22);
+        --green-glow-soft: rgba(46, 125, 70, 0.14);
+        --green-solid-soft: rgba(46, 125, 70, 0.72);
+        --green-solid-strong: rgba(46, 125, 70, 0.84);
+        --red-tint: rgba(192, 57, 43, 0.10);
+        --red-tint-soft: rgba(192, 57, 43, 0.05);
+        --red-border: rgba(192, 57, 43, 0.10);
+        --red-border-strong: rgba(192, 57, 43, 0.24);
+        --red-border-stronger: rgba(192, 57, 43, 0.38);
+        --red-tint-strong: rgba(192, 57, 43, 0.15);
+        --red-tint-stronger: rgba(192, 57, 43, 0.20);
+        --red-glow-soft: rgba(192, 57, 43, 0.06);
+        --orange-tint: rgba(184, 115, 30, 0.10);
+        --orange-tint-soft: rgba(184, 115, 30, 0.06);
+        --orange-border: rgba(184, 115, 30, 0.16);
+        --shadow-color: rgba(0, 0, 0, 0.12);
+        --shadow-soft: rgba(0, 0, 0, 0.08);
+        --shadow-strong: rgba(0, 0, 0, 0.16);
+        --shadow-stronger: rgba(0, 0, 0, 0.18);
+        --inset-highlight: rgba(0, 0, 0, 0.03);
+        --surface-stroke-subtle: rgba(0, 0, 0, 0.06);
+        --surface-fill: rgba(0, 0, 0, 0.03);
+        --surface-fill-hover: rgba(0, 0, 0, 0.05);
+        --surface-fill-strong: rgba(0, 0, 0, 0.08);
+        --surface-fill-stronger: rgba(0, 0, 0, 0.12);
+        --surface-fill-strongest: rgba(0, 0, 0, 0.18);
+        --surface-fill-strongest-hover: rgba(0, 0, 0, 0.24);
+        --neutral-tint: rgba(0, 0, 0, 0.06);
+        --neutral-tint-soft: rgba(0, 0, 0, 0.04);
+        --neutral-border: rgba(0, 0, 0, 0.10);
+        --overlay-scrim: rgba(248, 244, 237, 0.78);
+        --modal-scrim: rgba(248, 244, 237, 0.82);
+        --focus-ring: rgba(201, 107, 78, 0.16);
+        --focus-ring-soft: rgba(201, 107, 78, 0.10);
+        --focus-ring-subtle: rgba(201, 107, 78, 0.07);
+        --info-ring: rgba(98, 188, 233, 0.24);
+        --muted-badge: rgba(140, 136, 128, 0.16);
         --success-contrast: #F8F4ED;
       }
     }
@@ -199,7 +210,9 @@
       outline-offset: 2px;
     }
 
-    html { background: transparent; }
+    html {
+      background: transparent;
+    }
 
     body {
       font-family: var(--font-sans);
@@ -247,10 +260,12 @@
       position: relative;
       z-index: 10;
     }
+
     .split-handle::after {
       content: '';
       position: absolute;
-      top: 50%; left: 50%;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
       width: 3px;
       height: 40px;
@@ -258,12 +273,16 @@
       background: var(--surface-stroke-subtle);
       transition: background 150ms ease, height 150ms ease;
     }
+
     .split-handle:hover::after,
     .split-handle.dragging::after {
       background: var(--text-tertiary);
       height: 64px;
     }
-    .split-handle.visible { display: block; }
+
+    .split-handle.visible {
+      display: block;
+    }
 
     /* ── Recall panel (right side) ── */
     .recall-panel {
@@ -313,13 +332,22 @@
       background: var(--text-secondary);
     }
 
-    .recall-phase-dot.prep { background: var(--accent); }
+    .recall-phase-dot.prep {
+      background: var(--accent);
+    }
+
     .recall-phase-dot.listening {
       background: var(--red);
       animation: recording-glow 1.8s ease-in-out infinite;
     }
-    .recall-phase-dot.debrief { background: var(--green); }
-    .recall-phase-dot.weekly { background: var(--accent-2); }
+
+    .recall-phase-dot.debrief {
+      background: var(--green);
+    }
+
+    .recall-phase-dot.weekly {
+      background: var(--accent-2);
+    }
 
     .recall-phase-label {
       font-size: 12px;
@@ -328,10 +356,21 @@
       white-space: nowrap;
     }
 
-    .recall-phase-label.prep { color: var(--accent); }
-    .recall-phase-label.listening { color: var(--red); }
-    .recall-phase-label.debrief { color: var(--green); }
-    .recall-phase-label.weekly { color: var(--accent-2); }
+    .recall-phase-label.prep {
+      color: var(--accent);
+    }
+
+    .recall-phase-label.listening {
+      color: var(--red);
+    }
+
+    .recall-phase-label.debrief {
+      color: var(--green);
+    }
+
+    .recall-phase-label.weekly {
+      color: var(--accent-2);
+    }
 
     .recall-context-label {
       font-size: 12px;
@@ -359,7 +398,11 @@
       background: var(--panel);
       padding: 16px;
     }
-    .recall-weekly-view.active { display: block; }
+
+    .recall-weekly-view.active {
+      display: block;
+    }
+
     .recall-weekly-view pre {
       margin: 0;
       white-space: pre-wrap;
@@ -380,7 +423,11 @@
       line-height: 1;
     }
 
-    .recall-close:hover { color: var(--text-secondary); background: var(--bg-hover); }
+    .recall-close:hover {
+      color: var(--text-secondary);
+      background: var(--bg-hover);
+    }
+
     .recall-close:focus-visible {
       outline: none;
       color: var(--text-secondary);
@@ -399,14 +446,17 @@
       flex: 1;
       min-height: 0;
       overflow: hidden;
-      margin: 6px;
+      margin: 6px 0;
       border-radius: 14px;
       border: 1px solid var(--border);
       background: var(--bg-elevated);
     }
+
     .recall-terminal .xterm-screen {
       padding-top: 10px;
+      padding-left: 5px;
     }
+
     .recall-terminal.hidden {
       display: none;
     }
@@ -425,7 +475,9 @@
       flex-shrink: 0;
     }
 
-    .recall-note.active { display: block; }
+    .recall-note.active {
+      display: block;
+    }
 
     .recall-note-row {
       display: flex;
@@ -451,7 +503,9 @@
       box-shadow: 0 0 0 3px var(--focus-ring-soft);
     }
 
-    .recall-note-row input::placeholder { color: var(--text-tertiary); }
+    .recall-note-row input::placeholder {
+      color: var(--text-tertiary);
+    }
 
     /* Loading / error states */
     .recall-status {
@@ -489,7 +543,12 @@
       flex-shrink: 0;
     }
 
-    .recall-exit-banner.active { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .recall-exit-banner.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
 
     /* Lifecycle badges on meeting items */
     .meeting-badges {
@@ -532,11 +591,20 @@
       animation: nudge-pulse 2s ease-in-out infinite;
     }
 
-    .recall-nudge.active { display: inline-block; }
+    .recall-nudge.active {
+      display: inline-block;
+    }
 
     @keyframes nudge-pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
     }
 
     /* ── Header ── */
@@ -596,7 +664,9 @@
       cursor: pointer;
     }
 
-    .header-chip.active { display: inline-flex; }
+    .header-chip.active {
+      display: inline-flex;
+    }
 
     .header-chip.readiness {
       display: none;
@@ -606,7 +676,11 @@
       background: var(--neutral-tint);
       color: var(--text-secondary);
     }
-    #btn-open-md:hover { background: var(--surface-fill-strong); color: var(--text); }
+
+    #btn-open-md:hover {
+      background: var(--surface-fill-strong);
+      color: var(--text);
+    }
 
     .header-chip.dictation-shortcut {
       background: var(--accent-soft);
@@ -668,16 +742,24 @@
       background: var(--green-tint-soft);
       border-bottom: 1px solid var(--green-border);
     }
-    .live-bar.active { display: block; }
-    @media (prefers-reduced-motion: reduce) {
-      .live-dot { animation: none; }
+
+    .live-bar.active {
+      display: block;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .live-dot {
+        animation: none;
+      }
+    }
+
     .live-bar .top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
     }
+
     .live-indicator {
       display: flex;
       align-items: center;
@@ -688,6 +770,7 @@
       letter-spacing: 0.3px;
       text-transform: uppercase;
     }
+
     .live-dot {
       width: 10px;
       height: 10px;
@@ -696,10 +779,21 @@
       animation: live-pulse 2s ease-in-out infinite;
       /* Rounded square shape distinguishes from recording's circle for colorblind users */
     }
+
     @keyframes live-pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--green-glow); }
-      50% { opacity: 0.7; box-shadow: 0 0 6px 2px var(--green-ring); }
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 var(--green-glow);
+      }
+
+      50% {
+        opacity: 0.7;
+        box-shadow: 0 0 6px 2px var(--green-ring);
+      }
     }
+
     .live-time {
       font-size: 20px;
       font-variant-numeric: tabular-nums;
@@ -708,11 +802,13 @@
       font-weight: 500;
       letter-spacing: 0.5px;
     }
+
     .live-utterances {
       font-size: 11px;
       color: var(--text-secondary);
       margin-top: 2px;
     }
+
     .live-level {
       height: 3px;
       margin: 6px 0 8px;
@@ -720,6 +816,7 @@
       border-radius: 2px;
       overflow: hidden;
     }
+
     .live-level-fill {
       height: 100%;
       background: var(--live);
@@ -728,6 +825,7 @@
       transition: width 0.15s ease-out;
       width: 0%;
     }
+
     .live-actions {
       margin-top: 8px;
       display: flex;
@@ -750,13 +848,27 @@
     }
 
     @keyframes recording-enter {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes recording-breathe {
-      0%, 100% { background: var(--red-tint-soft); }
-      50% { background: var(--red-tint); }
+
+      0%,
+      100% {
+        background: var(--red-tint-soft);
+      }
+
+      50% {
+        background: var(--red-tint);
+      }
     }
 
     .recording-bar .top-row {
@@ -785,11 +897,22 @@
       animation: recording-glow 2s ease-in-out infinite;
     }
 
-    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
 
     @keyframes recording-glow {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.35; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.35;
+      }
     }
 
     .recording-time {
@@ -830,13 +953,17 @@
     .recording-actions .btn {
       flex: 1;
     }
+
     .recording-source-health {
       display: none;
       gap: 8px;
       flex-wrap: wrap;
       margin: 8px 0 12px;
     }
-    .recording-source-health.active { display: flex; }
+
+    .recording-source-health.active {
+      display: flex;
+    }
 
     /* ── Processing bar ── */
     .processing-bar {
@@ -852,8 +979,13 @@
     }
 
     @keyframes processing-enter {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .processing-row {
@@ -873,7 +1005,9 @@
     }
 
     @keyframes processing-spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .processing-copy {
@@ -957,6 +1091,7 @@
       color: var(--text-secondary);
       margin-top: 2px;
     }
+
     .processing-elapsed {
       font-size: 11px;
       color: var(--text-tertiary);
@@ -978,8 +1113,15 @@
     }
 
     @keyframes notice-enter {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .output-notice.capture {
@@ -1050,7 +1192,9 @@
       padding: 0 16px 12px;
     }
 
-    .quick-note.active { display: block; }
+    .quick-note.active {
+      display: block;
+    }
 
     .quick-note-row {
       display: flex;
@@ -1076,7 +1220,9 @@
       box-shadow: 0 0 0 3px var(--focus-ring-soft);
     }
 
-    .quick-note-row input::placeholder { color: var(--text-tertiary); }
+    .quick-note-row input::placeholder {
+      color: var(--text-tertiary);
+    }
 
     /* ── Search ── */
     .search-wrap {
@@ -1103,7 +1249,9 @@
       background: var(--surface-fill-hover);
     }
 
-    .search-box::placeholder { color: var(--text-secondary); }
+    .search-box::placeholder {
+      color: var(--text-secondary);
+    }
 
     .search-icon {
       position: relative;
@@ -1129,12 +1277,19 @@
       -webkit-mask-image: linear-gradient(transparent, black 8px, black calc(100% - 8px), transparent);
     }
 
-    .meetings-scroll::-webkit-scrollbar { width: 5px; }
-    .meetings-scroll::-webkit-scrollbar-track { background: transparent; }
+    .meetings-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .meetings-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
     .meetings-scroll::-webkit-scrollbar-thumb {
       background: var(--surface-fill-strong);
       border-radius: 999px;
     }
+
     .meetings-scroll::-webkit-scrollbar-thumb:hover {
       background: var(--surface-fill-stronger);
     }
@@ -1146,9 +1301,11 @@
       flex: 1;
       min-height: 0;
     }
+
     .md-viewer.active {
       display: flex;
     }
+
     .md-viewer-header {
       display: flex;
       align-items: center;
@@ -1157,6 +1314,7 @@
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
+
     .md-viewer-header-main {
       display: flex;
       align-items: center;
@@ -1164,12 +1322,14 @@
       min-width: 0;
       flex: 1;
     }
+
     .md-viewer-toolbar {
       display: flex;
       align-items: center;
       gap: 2px;
       flex-shrink: 0;
     }
+
     .md-viewer-toolbar .btn,
     .md-viewer-toolbar .btn.btn-secondary,
     .md-viewer-toolbar .btn.btn-sm {
@@ -1184,24 +1344,29 @@
       padding: 4px 10px;
       border-radius: 6px;
     }
+
     .md-viewer-toolbar .btn:hover:not(:disabled) {
       background: var(--bg-hover) !important;
       color: var(--text);
     }
+
     .md-viewer-toolbar .btn:disabled {
       opacity: 0.3;
       cursor: default;
     }
+
     .md-viewer-toolbar .md-viewer-mode-btn {
       font-family: var(--font-mono);
       font-size: 10px;
       letter-spacing: 0.3px;
       text-transform: uppercase;
     }
+
     .md-viewer-toolbar .md-viewer-mode-btn.active {
       background: var(--surface-fill-strong) !important;
       color: var(--text);
     }
+
     .md-viewer-toolbar-sep {
       width: 1px;
       height: 14px;
@@ -1209,6 +1374,7 @@
       margin: 0 4px;
       flex-shrink: 0;
     }
+
     .md-viewer-back {
       background: none;
       border: none;
@@ -1219,7 +1385,12 @@
       border-radius: 4px;
       line-height: 1;
     }
-    .md-viewer-back:hover { background: var(--bg-hover); color: var(--text); }
+
+    .md-viewer-back:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
     .md-viewer-filename {
       font-size: 12px;
       font-family: var(--font-mono);
@@ -1229,6 +1400,7 @@
       text-overflow: ellipsis;
       min-width: 0;
     }
+
     .md-viewer-kind {
       display: inline-flex;
       align-items: center;
@@ -1245,6 +1417,7 @@
       text-transform: uppercase;
       flex-shrink: 0;
     }
+
     .md-viewer-content {
       flex: 1;
       overflow-y: auto;
@@ -1252,9 +1425,20 @@
       -webkit-user-select: text;
       user-select: text;
     }
-    .md-viewer-content::-webkit-scrollbar { width: 5px; }
-    .md-viewer-content::-webkit-scrollbar-track { background: transparent; }
-    .md-viewer-content::-webkit-scrollbar-thumb { background: var(--surface-fill-strong); border-radius: 999px; }
+
+    .md-viewer-content::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .md-viewer-content::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .md-viewer-content::-webkit-scrollbar-thumb {
+      background: var(--surface-fill-strong);
+      border-radius: 999px;
+    }
+
     .md-viewer-editor {
       display: none;
       flex: 1;
@@ -1271,22 +1455,43 @@
       white-space: pre-wrap;
       overflow-y: auto;
     }
-    .md-viewer-editor.active { display: block; }
+
+    .md-viewer-editor.active {
+      display: block;
+    }
+
     .md-viewer-mode-btn.active {
       background: var(--surface-fill-strong);
       color: var(--text);
     }
+
     .md-viewer-status {
       font-size: 11px;
       color: var(--text-secondary);
       min-width: 88px;
       text-align: right;
     }
-    .md-viewer-status.unsaved { color: var(--amber); }
-    .md-viewer-status.saved { color: var(--green); }
-    .md-viewer-status.warning { color: var(--red); }
-    .md-viewer-status.external { color: var(--accent); }
-    .md-viewer-status.readonly { color: var(--text-secondary); }
+
+    .md-viewer-status.unsaved {
+      color: var(--amber);
+    }
+
+    .md-viewer-status.saved {
+      color: var(--green);
+    }
+
+    .md-viewer-status.warning {
+      color: var(--red);
+    }
+
+    .md-viewer-status.external {
+      color: var(--accent);
+    }
+
+    .md-viewer-status.readonly {
+      color: var(--text-secondary);
+    }
+
     .md-viewer-review {
       display: none;
       border-top: 1px solid var(--border);
@@ -1295,14 +1500,22 @@
       gap: 12px;
       flex-direction: column;
     }
-    .md-viewer-review.active { display: flex; }
+
+    .md-viewer-review.active {
+      display: flex;
+    }
+
     .md-viewer-history {
       display: none;
       gap: 10px;
       overflow-x: auto;
       padding: 10px 18px 0;
     }
-    .md-viewer-history.active { display: flex; }
+
+    .md-viewer-history.active {
+      display: flex;
+    }
+
     .md-viewer-history-item {
       min-width: 190px;
       max-width: 240px;
@@ -1314,10 +1527,12 @@
       flex-direction: column;
       gap: 6px;
     }
+
     .md-viewer-history-item.active {
       border-color: var(--accent);
       box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
     }
+
     .md-viewer-history-title {
       font-size: 12px;
       font-weight: 600;
@@ -1327,6 +1542,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     .md-viewer-history-meta {
       font-size: 11px;
       color: var(--muted);
@@ -1335,17 +1551,20 @@
       gap: 6px;
       line-height: 1.4;
     }
+
     .md-viewer-history-open {
       align-self: flex-start;
       font-size: 11px;
       padding: 4px 8px;
     }
+
     .md-viewer-review-head {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 12px;
     }
+
     .md-viewer-review-title {
       font-size: 12px;
       font-weight: 600;
@@ -1353,28 +1572,33 @@
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+
     .md-viewer-review-meta {
       font-size: 11px;
       color: var(--text-secondary);
       text-align: right;
     }
+
     .md-viewer-review-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
+
     .md-viewer-review-col {
       min-width: 0;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
+
     .md-viewer-review-label {
       font-size: 11px;
       color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+
     .md-viewer-review-pre {
       margin: 0;
       padding: 10px 12px;
@@ -1387,6 +1611,7 @@
       overflow: auto;
       max-height: 220px;
     }
+
     .json-tree {
       display: flex;
       flex-direction: column;
@@ -1394,27 +1619,50 @@
       font: 12px/1.55 var(--font-mono);
       color: var(--text);
     }
+
     .json-node {
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
+
     .json-node details {
       border-left: 1px solid var(--border);
       padding-left: 10px;
       margin-left: 6px;
     }
+
     .json-node summary {
       list-style: none;
       cursor: pointer;
       color: var(--text);
     }
-    .json-node summary::-webkit-details-marker { display: none; }
-    .json-key { color: var(--accent); }
-    .json-string { color: var(--green); }
-    .json-number { color: var(--amber); }
-    .json-boolean { color: var(--red); }
-    .json-null { color: var(--text-secondary); font-style: italic; }
+
+    .json-node summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .json-key {
+      color: var(--accent);
+    }
+
+    .json-string {
+      color: var(--green);
+    }
+
+    .json-number {
+      color: var(--amber);
+    }
+
+    .json-boolean {
+      color: var(--red);
+    }
+
+    .json-null {
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
     .json-inline {
       display: block;
       white-space: pre-wrap;
@@ -1422,6 +1670,7 @@
       color: var(--text);
       margin: 0;
     }
+
     .artifact-template-overlay {
       position: fixed;
       inset: 0;
@@ -1433,32 +1682,40 @@
       z-index: 90;
       padding: 20px;
     }
-    .artifact-template-overlay.active { display: flex; }
+
+    .artifact-template-overlay.active {
+      display: flex;
+    }
+
     .artifact-template-card {
       width: min(560px, 100%);
       background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: calc(var(--radius-lg) + 2px);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
       padding: 18px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
+
     .artifact-template-title {
       font-family: var(--font-display);
       font-size: 20px;
       color: var(--text);
     }
+
     .artifact-template-sub {
       font-size: 13px;
       color: var(--text-secondary);
       line-height: 1.5;
     }
+
     .artifact-template-list {
       display: grid;
       gap: 10px;
     }
+
     .artifact-template-option {
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -1471,22 +1728,26 @@
       cursor: pointer;
       transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
     }
+
     .artifact-template-option:hover {
       border-color: var(--accent);
       background: var(--surface-fill-strong);
       transform: translateY(-1px);
     }
+
     .artifact-template-option-title {
       font-size: 13px;
       font-weight: 600;
       color: var(--text);
     }
+
     .artifact-template-option-body {
       font-size: 12px;
       line-height: 1.5;
       color: var(--text-secondary);
       text-align: left;
     }
+
     .artifact-template-actions {
       display: flex;
       justify-content: flex-end;
@@ -1503,26 +1764,45 @@
       margin: 1.2em 0 0.4em;
       line-height: 1.25;
     }
-    .md-viewer-content h1 { font-size: 22px; }
-    .md-viewer-content h2 { font-size: 18px; }
-    .md-viewer-content h3 { font-size: 15px; }
+
+    .md-viewer-content h1 {
+      font-size: 22px;
+    }
+
+    .md-viewer-content h2 {
+      font-size: 18px;
+    }
+
+    .md-viewer-content h3 {
+      font-size: 15px;
+    }
+
     .md-viewer-content h1:first-child,
     .md-viewer-content h2:first-child,
-    .md-viewer-content h3:first-child { margin-top: 0; }
+    .md-viewer-content h3:first-child {
+      margin-top: 0;
+    }
+
     .md-viewer-content p {
       font-size: 13px;
       line-height: 1.6;
       color: var(--text);
       margin: 0.6em 0;
     }
-    .md-viewer-content ul, .md-viewer-content ol {
+
+    .md-viewer-content ul,
+    .md-viewer-content ol {
       font-size: 13px;
       line-height: 1.6;
       color: var(--text);
       padding-left: 20px;
       margin: 0.4em 0;
     }
-    .md-viewer-content li { margin: 0.2em 0; }
+
+    .md-viewer-content li {
+      margin: 0.2em 0;
+    }
+
     .md-viewer-content code {
       font-family: var(--font-mono);
       font-size: 12px;
@@ -1530,6 +1810,7 @@
       padding: 1px 5px;
       border-radius: 4px;
     }
+
     .md-viewer-content pre {
       background: var(--surface-fill);
       border: 1px solid var(--border);
@@ -1538,10 +1819,12 @@
       overflow-x: auto;
       margin: 0.6em 0;
     }
+
     .md-viewer-content pre code {
       background: none;
       padding: 0;
     }
+
     .md-viewer-content blockquote {
       border-left: 3px solid var(--accent);
       padding: 4px 12px;
@@ -1549,27 +1832,36 @@
       color: var(--text-secondary);
       font-size: 13px;
     }
+
     .md-viewer-content hr {
       border: none;
       border-top: 1px solid var(--border);
       margin: 1em 0;
     }
+
     .md-viewer-content a {
       color: var(--accent);
       text-decoration: none;
     }
-    .md-viewer-content strong { font-weight: 600; }
+
+    .md-viewer-content strong {
+      font-weight: 600;
+    }
+
     .md-viewer-content table {
       border-collapse: collapse;
       font-size: 12px;
       margin: 0.6em 0;
       width: 100%;
     }
-    .md-viewer-content th, .md-viewer-content td {
+
+    .md-viewer-content th,
+    .md-viewer-content td {
       border: 1px solid var(--border);
       padding: 5px 8px;
       text-align: left;
     }
+
     .md-viewer-content th {
       background: var(--surface-fill);
       font-weight: 600;
@@ -1587,29 +1879,71 @@
       margin-bottom: 2px;
     }
 
-    .date-group:first-child { padding-top: 4px; }
+    .date-group:first-child {
+      padding-top: 4px;
+    }
 
     /* ── Staggered entrance ── */
     @keyframes list-enter {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    .meeting-item, .date-group {
+    .meeting-item,
+    .date-group {
       animation: list-enter 0.25s ease-out both;
     }
 
-    .meetings-scroll > :nth-child(1) { animation-delay: 0ms; }
-    .meetings-scroll > :nth-child(2) { animation-delay: 30ms; }
-    .meetings-scroll > :nth-child(3) { animation-delay: 55ms; }
-    .meetings-scroll > :nth-child(4) { animation-delay: 75ms; }
-    .meetings-scroll > :nth-child(5) { animation-delay: 95ms; }
-    .meetings-scroll > :nth-child(6) { animation-delay: 110ms; }
-    .meetings-scroll > :nth-child(7) { animation-delay: 125ms; }
-    .meetings-scroll > :nth-child(8) { animation-delay: 140ms; }
-    .meetings-scroll > :nth-child(9) { animation-delay: 155ms; }
-    .meetings-scroll > :nth-child(10) { animation-delay: 170ms; }
-    .meetings-scroll > :nth-child(n+11) { animation-delay: 185ms; }
+    .meetings-scroll> :nth-child(1) {
+      animation-delay: 0ms;
+    }
+
+    .meetings-scroll> :nth-child(2) {
+      animation-delay: 30ms;
+    }
+
+    .meetings-scroll> :nth-child(3) {
+      animation-delay: 55ms;
+    }
+
+    .meetings-scroll> :nth-child(4) {
+      animation-delay: 75ms;
+    }
+
+    .meetings-scroll> :nth-child(5) {
+      animation-delay: 95ms;
+    }
+
+    .meetings-scroll> :nth-child(6) {
+      animation-delay: 110ms;
+    }
+
+    .meetings-scroll> :nth-child(7) {
+      animation-delay: 125ms;
+    }
+
+    .meetings-scroll> :nth-child(8) {
+      animation-delay: 140ms;
+    }
+
+    .meetings-scroll> :nth-child(9) {
+      animation-delay: 155ms;
+    }
+
+    .meetings-scroll> :nth-child(10) {
+      animation-delay: 170ms;
+    }
+
+    .meetings-scroll> :nth-child(n+11) {
+      animation-delay: 185ms;
+    }
 
     .meeting-item {
       display: flex;
@@ -1627,9 +1961,16 @@
       background: var(--bg-hover);
       box-shadow: 0 1px 4px var(--shadow-soft);
     }
-    .meeting-item:active { background: var(--surface-fill-strong); box-shadow: none; }
 
-    .meeting-info { flex: 1; min-width: 0; }
+    .meeting-item:active {
+      background: var(--surface-fill-strong);
+      box-shadow: none;
+    }
+
+    .meeting-info {
+      flex: 1;
+      min-width: 0;
+    }
 
     .meeting-title {
       font-size: 15px;
@@ -1709,7 +2050,9 @@
       z-index: 120;
     }
 
-    .detail-overlay.active { display: flex; }
+    .detail-overlay.active {
+      display: flex;
+    }
 
     .detail-card {
       width: min(760px, 100%);
@@ -1757,7 +2100,12 @@
       -webkit-app-region: no-drag;
       z-index: 1;
     }
-    .detail-close-x:hover { background: var(--bg-hover); color: var(--text-secondary); }
+
+    .detail-close-x:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
     .detail-close-x:focus-visible {
       outline: none;
       background: var(--bg-hover);
@@ -1844,8 +2192,15 @@
       opacity: 0;
       transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
     }
-    .meeting-item:hover .meeting-chat-btn { opacity: 1; }
-    .meeting-chat-btn:hover { background: var(--accent-tint); color: var(--accent); }
+
+    .meeting-item:hover .meeting-chat-btn {
+      opacity: 1;
+    }
+
+    .meeting-chat-btn:hover {
+      background: var(--accent-tint);
+      color: var(--accent);
+    }
 
     .detail-context {
       margin-top: 16px;
@@ -1884,12 +2239,14 @@
       line-height: 1.45;
       color: var(--text-secondary);
     }
+
     .detail-chip-row {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin-top: 6px;
     }
+
     .detail-chip-btn {
       border: 1px solid var(--border);
       background: var(--panel);
@@ -1900,6 +2257,7 @@
       line-height: 1.3;
       cursor: pointer;
     }
+
     .detail-chip-btn:hover {
       border-color: var(--accent);
       color: var(--accent);
@@ -2073,8 +2431,20 @@
       color: var(--text-tertiary);
     }
 
-    .empty-state .title { font-size: 20px; font-family: var(--font-display); font-weight: 400; color: var(--text); margin-bottom: 6px; }
-    .empty-state .sub { font-size: 12px; margin-top: 6px; line-height: 1.5; color: var(--text-secondary); }
+    .empty-state .title {
+      font-size: 20px;
+      font-family: var(--font-display);
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .empty-state .sub {
+      font-size: 12px;
+      margin-top: 6px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+    }
 
     /* ── About view ── */
     .about-overlay {
@@ -2090,7 +2460,9 @@
       z-index: 130;
     }
 
-    .about-overlay.active { display: flex; }
+    .about-overlay.active {
+      display: flex;
+    }
 
     .about-card {
       width: min(520px, 100%);
@@ -2210,6 +2582,7 @@
       cursor: pointer;
       transition: border-color 0.15s, color 0.15s;
     }
+
     .shortcut-recorder-btn:hover {
       border-color: var(--accent);
     }
@@ -2243,7 +2616,9 @@
       z-index: 128;
     }
 
-    .readiness-overlay.active { display: flex; }
+    .readiness-overlay.active {
+      display: flex;
+    }
 
     .readiness-card {
       width: min(720px, 100%);
@@ -2366,7 +2741,9 @@
       z-index: 125;
     }
 
-    .recovery-overlay.active { display: flex; }
+    .recovery-overlay.active {
+      display: flex;
+    }
 
     .recovery-card {
       width: min(760px, 100%);
@@ -2589,7 +2966,10 @@
       background: var(--accent-hover);
       box-shadow: inset 0 -1px 0 var(--border);
     }
-    .btn-primary:active { transform: scale(0.98); }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
 
     .btn-danger {
       background: var(--red-tint);
@@ -2599,8 +2979,15 @@
       font-weight: 600;
     }
 
-    .btn-danger:hover { background: var(--red-tint-strong); border-color: var(--red-border-stronger); }
-    .btn-danger:active { transform: scale(0.98); background: var(--red-tint-stronger); }
+    .btn-danger:hover {
+      background: var(--red-tint-strong);
+      border-color: var(--red-border-stronger);
+    }
+
+    .btn-danger:active {
+      transform: scale(0.98);
+      background: var(--red-tint-stronger);
+    }
 
     .btn-secondary {
       background: var(--surface-fill-hover);
@@ -2612,9 +2999,15 @@
       font-size: 11px;
     }
 
-    .btn-secondary:hover { background: var(--surface-fill-strong); color: var(--text); }
+    .btn-secondary:hover {
+      background: var(--surface-fill-strong);
+      color: var(--text);
+    }
 
-    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn-sm {
+      padding: 5px 12px;
+      font-size: 12px;
+    }
 
     .device-picker {
       background: var(--bg-elevated);
@@ -2634,7 +3027,11 @@
         background-color 0.18s ease,
         color 0.18s ease;
     }
-    .device-picker:hover { border-color: var(--text-tertiary); }
+
+    .device-picker:hover {
+      border-color: var(--text-tertiary);
+    }
+
     .device-picker:focus,
     .device-picker:focus-visible {
       border-color: var(--accent);
@@ -2650,7 +3047,12 @@
       color: var(--text-secondary);
       border-radius: 6px;
     }
-    .btn-icon:hover { background: var(--bg-hover); color: var(--text); }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
     .btn-icon:focus-visible {
       outline: none;
       background: var(--bg-hover);
@@ -2665,11 +3067,20 @@
       background: var(--green-tint-soft);
       border-bottom: 1px solid var(--green-border);
     }
-    .upcoming.active { display: flex; }
 
-    .upcoming-icon { font-size: 16px; flex-shrink: 0; }
+    .upcoming.active {
+      display: flex;
+    }
 
-    .upcoming-info { flex: 1; min-width: 0; }
+    .upcoming-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .upcoming-info {
+      flex: 1;
+      min-width: 0;
+    }
 
     .upcoming-title {
       font-size: 12px;
@@ -2686,7 +3097,9 @@
       font-weight: 500;
     }
 
-    .upcoming .btn { flex-shrink: 0; }
+    .upcoming .btn {
+      flex-shrink: 0;
+    }
 
     .ambient-context-card {
       margin: 10px 0 14px;
@@ -2698,6 +3111,7 @@
       flex-direction: column;
       gap: 8px;
     }
+
     .ambient-context-title {
       font-size: 11px;
       font-weight: 700;
@@ -2705,12 +3119,14 @@
       text-transform: uppercase;
       color: var(--text-tertiary);
     }
+
     .ambient-context-summary {
       font-size: 13px;
       line-height: 1.5;
       color: var(--text-secondary);
       white-space: pre-wrap;
     }
+
     .ambient-context-actions {
       display: flex;
       gap: 8px;
@@ -2726,13 +3142,47 @@
       background: var(--green-tint-soft);
       border-bottom: 1px solid var(--green-border);
     }
-    .call-detected.active { display: flex; }
-    .call-detected-icon { font-size: 16px; flex-shrink: 0; }
-    .call-detected-info { flex: 1; min-width: 0; }
-    .call-detected-title { font-size: 13px; font-weight: 600; color: var(--text); }
-    .call-detected-subtitle { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 2px; }
-    .call-detected-detail { font-size: 11px; color: var(--text-secondary); margin-top: 6px; line-height: 1.35; }
-    .call-detected-health { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+
+    .call-detected.active {
+      display: flex;
+    }
+
+    .call-detected-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .call-detected-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .call-detected-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .call-detected-subtitle {
+      font-size: 11px;
+      color: var(--green);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .call-detected-detail {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+
+    .call-detected-health {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
 
     /* ── Update available banner ── */
     .update-banner {
@@ -2743,12 +3193,39 @@
       background: var(--green-tint-soft);
       border-bottom: 1px solid var(--green-border);
     }
-    .update-banner.active { display: flex; animation: processing-enter 0.3s ease-out; }
-    .update-banner-info { flex: 1; min-width: 0; }
-    .update-banner-title { font-size: 12px; font-weight: 600; color: var(--text); }
-    .update-banner-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
-    .update-banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .update-banner-actions .btn { font-size: 11px; }
+
+    .update-banner.active {
+      display: flex;
+      animation: processing-enter 0.3s ease-out;
+    }
+
+    .update-banner-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .update-banner-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .update-banner-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .update-banner-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .update-banner-actions .btn {
+      font-size: 11px;
+    }
+
     .call-health-chip {
       font-size: 11px;
       border-radius: 999px;
@@ -2757,11 +3234,13 @@
       color: var(--text-secondary);
       border: 1px solid var(--neutral-border);
     }
+
     .call-health-chip.live {
       color: var(--green);
       border-color: var(--green-border);
       background: var(--green-tint-soft);
     }
+
     .call-detected-actions {
       display: flex;
       align-items: center;
@@ -2769,398 +3248,405 @@
       flex-shrink: 0;
       margin-left: 8px;
     }
-      .ui-hidden {
-        display: none;
-      }
 
-      .is-hidden {
-        display: none;
-      }
+    .ui-hidden {
+      display: none;
+    }
 
-      .footer-hidden {
-        display: none;
-      }
+    .is-hidden {
+      display: none;
+    }
 
-      .footer.capture-mode {
-        padding-top: 0;
-      }
+    .footer-hidden {
+      display: none;
+    }
 
-      .footer.capture-mode .footer-action-primary,
-      .footer.capture-mode .footer-device-picker {
-        display: none;
-      }
+    .footer.capture-mode {
+      padding-top: 0;
+    }
 
-      .footer.capture-mode .footer-actions {
-        grid-template-columns: 1fr;
-      }
+    .footer.capture-mode .footer-action-primary,
+    .footer.capture-mode .footer-device-picker {
+      display: none;
+    }
 
-      .footer.capture-mode .footer-action-secondary {
-        grid-template-columns: 1fr 1fr 1fr;
-      }
+    .footer.capture-mode .footer-actions {
+      grid-template-columns: 1fr;
+    }
 
-      .btn {
-        transition: transform 0.17s ease, background-color 0.17s ease, border-color 0.17s ease, color 0.17s ease, opacity 0.17s ease, box-shadow 0.17s ease;
-      }
+    .footer.capture-mode .footer-action-secondary {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
 
-      .btn:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-      }
+    .btn {
+      transition: transform 0.17s ease, background-color 0.17s ease, border-color 0.17s ease, color 0.17s ease, opacity 0.17s ease, box-shadow 0.17s ease;
+    }
 
-      .btn-icon {
-        transition: transform 0.17s ease, background-color 0.17s ease, color 0.17s ease, box-shadow 0.17s ease;
-      }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
 
-      .btn-icon:focus-visible,
-      .btn:focus-visible {
-        outline: 0;
-        box-shadow: 0 0 0 2px var(--info-ring);
-      }
+    .btn-icon {
+      transition: transform 0.17s ease, background-color 0.17s ease, color 0.17s ease, box-shadow 0.17s ease;
+    }
 
-      .btn:hover,
-      .btn-icon:hover {
-        transform: translateY(-1px);
-      }
+    .btn-icon:focus-visible,
+    .btn:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 2px var(--info-ring);
+    }
 
-      .recall-panel {
-        border-radius: 16px;
-        padding: 16px;
-        gap: 12px;
-      }
+    .btn:hover,
+    .btn-icon:hover {
+      transform: translateY(-1px);
+    }
 
-      .recall-header {
-        border-radius: 12px;
-      }
+    .recall-panel {
+      border-radius: 16px;
+      padding: 16px;
+      gap: 12px;
+    }
 
-      .recall-terminal {
-        border-radius: 14px;
-        gap: 12px;
-      }
+    .recall-header {
+      border-radius: 12px;
+    }
 
-      .recall-close {
-        transition: transform 0.17s ease, background-color 0.17s ease, color 0.17s ease, box-shadow 0.17s ease;
-      }
+    .recall-terminal {
+      border-radius: 14px;
+      gap: 12px;
+    }
 
-      .audio-viz .bar {
-        opacity: 0.62;
-      }
+    .recall-close {
+      transition: transform 0.17s ease, background-color 0.17s ease, color 0.17s ease, box-shadow 0.17s ease;
+    }
 
-      .settings-card {
-        width: min(580px, 100%);
-        max-height: calc(100vh - 40px);
-      }
+    .audio-viz .bar {
+      opacity: 0.62;
+    }
 
-      .settings-title {
-        font-size: 20px;
-        font-family: var(--font-display);
-      }
+    .settings-card {
+      width: min(580px, 100%);
+      max-height: calc(100vh - 40px);
+    }
 
-      .settings-section {
-        margin-bottom: 16px;
-      }
+    .settings-title {
+      font-size: 20px;
+      font-family: var(--font-display);
+    }
 
-      .settings-section-inline {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 6px;
-      }
+    .settings-section {
+      margin-bottom: 16px;
+    }
 
-      .settings-section-inline-tight {
-        margin-top: 4px;
-      }
+    .settings-section-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
 
-      .settings-shortcut-key {
-        min-width: 140px;
-        font-family: var(--font-mono);
-        font-size: 12px;
-      }
+    .settings-section-inline-tight {
+      margin-top: 4px;
+    }
 
-      .settings-hint-link {
-        font-size: 11px;
-        color: var(--text-tertiary);
-        cursor: pointer;
-      }
+    .settings-shortcut-key {
+      min-width: 140px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
 
-      .settings-field {
-        margin-top: 6px;
-        width: 100%;
-        padding: 6px 8px;
-        border-radius: 8px;
-        background: var(--neutral-tint);
-        border: 1px solid var(--neutral-border);
-        color: var(--text);
-        font-size: 13px;
-        box-sizing: border-box;
-      }
+    .settings-hint-link {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
 
-      .settings-meta-inline {
-        margin-bottom: 6px;
-        margin-top: 4px;
-      }
+    .settings-field {
+      margin-top: 6px;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: var(--neutral-tint);
+      border: 1px solid var(--neutral-border);
+      color: var(--text);
+      font-size: 13px;
+      box-sizing: border-box;
+    }
 
-      .settings-compact-meta {
-        margin-top: -8px;
-        margin-bottom: 8px;
-      }
+    .settings-meta-inline {
+      margin-bottom: 6px;
+      margin-top: 4px;
+    }
 
-      .settings-config-path {
-        font-family: var(--font-mono);
-        opacity: 0.7;
-      }
+    .settings-compact-meta {
+      margin-top: -8px;
+      margin-bottom: 8px;
+    }
 
-      .settings-storage-meta {
-        font-size: 13px;
-        color: var(--text-secondary);
-        line-height: 1.8;
-        padding: 0 4px;
-      }
+    .settings-config-path {
+      font-family: var(--font-mono);
+      opacity: 0.7;
+    }
 
-      .settings-control-group {
-        flex: 1;
-      }
+    .settings-storage-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      padding: 0 4px;
+    }
 
-      .settings-model-status {
-        flex: 1;
-        margin: 0;
-      }
+    .settings-control-group {
+      flex: 1;
+    }
 
-      .settings-footer {
-        padding-top: 14px;
-        border-top: 1px solid var(--border);
-        color: var(--text-tertiary);
-        line-height: 1.45;
-      }
+    .settings-model-status {
+      flex: 1;
+      margin: 0;
+    }
 
-      .about-footer-small {
-        font-size: 11px;
-      }
+    .settings-footer {
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      color: var(--text-tertiary);
+      line-height: 1.45;
+    }
 
-      .settings-section-tight {
-        margin-bottom: 8px;
-      }
+    .about-footer-small {
+      font-size: 11px;
+    }
 
-      .download-progress {
-        display: none;
-      }
+    .settings-section-tight {
+      margin-bottom: 8px;
+    }
 
-      .download-progress.is-visible {
-        display: block;
-      }
+    .download-progress {
+      display: none;
+    }
 
-    </style>
+    .download-progress.is-visible {
+      display: block;
+    }
+  </style>
 </head>
+
 <body>
   <div class="app-left">
-  <!-- Header -->
-  <div class="header">
-    <div class="brand">
-      <div class="brand-copy">
-        <div class="brand-label">Minutes</div>
-        <div class="brand-sub">Conversation memory for humans and agents</div>
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">
+        <div class="brand-copy">
+          <div class="brand-label">Minutes</div>
+          <div class="brand-sub">Conversation memory for humans and agents</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="header-chip active" id="btn-open-md" title="Open file (⌘O)">Open</button>
+        <button class="btn btn-icon" id="btn-settings" title="Settings (⌘,)">⚙</button>
+        <button class="header-chip dictation-shortcut" id="dictation-shortcut-chip">Dictate</button>
+        <button class="header-chip readiness" id="btn-readiness">Readiness</button>
+        <button class="header-chip" id="btn-jobs">Jobs <span id="jobs-count">0</span></button>
+        <button class="header-chip" id="btn-recovery">Recovery <span id="recovery-count">0</span></button>
+        <span class="status-pill" id="status-pill">idle</span>
       </div>
     </div>
-    <div class="header-actions">
-      <button class="header-chip active" id="btn-open-md" title="Open file (⌘O)">Open</button>
-      <button class="btn btn-icon" id="btn-settings" title="Settings (⌘,)">⚙</button>
-      <button class="header-chip dictation-shortcut" id="dictation-shortcut-chip">Dictate</button>
-      <button class="header-chip readiness" id="btn-readiness">Readiness</button>
-      <button class="header-chip" id="btn-jobs">Jobs <span id="jobs-count">0</span></button>
-      <button class="header-chip" id="btn-recovery">Recovery <span id="recovery-count">0</span></button>
-      <span class="status-pill" id="status-pill">idle</span>
-    </div>
-  </div>
 
-  <!-- Recording bar (hidden when not recording) -->
-  <div class="recording-bar" id="recording-bar">
-    <div class="top-row">
-      <div class="recording-indicator">
-        <span class="recording-dot"></span>
-        <span id="recording-label">Recording</span>
+    <!-- Recording bar (hidden when not recording) -->
+    <div class="recording-bar" id="recording-bar">
+      <div class="top-row">
+        <div class="recording-indicator">
+          <span class="recording-dot"></span>
+          <span id="recording-label">Recording</span>
+        </div>
+        <span class="recording-time" id="recording-time">0:00</span>
       </div>
-      <span class="recording-time" id="recording-time">0:00</span>
-    </div>
-    <div class="recording-source-health" id="recording-source-health">
-      <span class="call-health-chip" id="recording-health-mic">Mic waiting</span>
-      <span class="call-health-chip" id="recording-health-audio">Call audio waiting</span>
-    </div>
-    <div class="audio-viz" id="audio-viz"></div>
-    <div class="recording-actions">
-      <button class="btn btn-secondary btn-sm" id="btn-note-inline" title="Add a note">Add Note</button>
-      <button class="btn btn-danger btn-sm" id="btn-stop">Stop Recording</button>
-    </div>
-  </div>
-
-  <!-- Live transcript bar (hidden when not in live mode) -->
-  <div class="live-bar" id="live-bar" role="status" aria-live="polite">
-    <div class="top-row">
-      <div class="live-indicator">
-        <span class="live-dot" aria-hidden="true"></span>
-        <span>Live Transcript</span>
+      <div class="recording-source-health" id="recording-source-health">
+        <span class="call-health-chip" id="recording-health-mic">Mic waiting</span>
+        <span class="call-health-chip" id="recording-health-audio">Call audio waiting</span>
       </div>
-      <span class="live-time" id="live-time">0:00</span>
-    </div>
-    <div class="live-level"><div class="live-level-fill" id="live-level-fill"></div></div>
-    <div class="live-utterances" id="live-utterances">0 utterances</div>
-    <div class="live-actions">
-      <button class="btn btn-secondary btn-sm" id="btn-stop-live">Stop Live</button>
-    </div>
-  </div>
-
-  <!-- Processing bar (hidden when not processing) -->
-  <div class="processing-bar" id="processing-bar">
-    <div class="processing-row">
-      <div class="processing-spinner" aria-hidden="true"></div>
-      <div class="processing-copy">
-        <div class="processing-title" id="processing-title">Processing recording</div>
-        <div class="processing-stage" id="processing-stage">Preparing transcript...</div>
-        <div class="processing-elapsed" id="processing-elapsed"></div>
-        <div class="processing-summary" id="processing-summary"></div>
+      <div class="audio-viz" id="audio-viz"></div>
+      <div class="recording-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-note-inline" title="Add a note">Add Note</button>
+        <button class="btn btn-danger btn-sm" id="btn-stop">Stop Recording</button>
       </div>
     </div>
-    <div class="processing-jobs" id="processing-jobs"></div>
-  </div>
 
-  <!-- Output notice -->
-  <div class="output-notice" id="output-notice">
-    <div class="output-notice-row">
-      <div class="output-notice-icon" id="output-notice-icon">✓</div>
-      <div class="output-notice-copy">
-        <div class="output-notice-title" id="output-notice-title">Saved meeting</div>
-        <div class="output-notice-detail" id="output-notice-detail"></div>
-        <div class="output-notice-path" id="output-notice-path"></div>
-        <div class="output-notice-actions">
-          <button class="btn btn-secondary btn-sm" id="btn-open-output">Open</button>
-          <button class="btn btn-secondary btn-sm" id="btn-draft-output">Create Draft</button>
-          <button class="btn btn-secondary btn-sm" id="btn-open-output-folder">Show in Folder</button>
-          <button class="btn btn-secondary btn-sm" id="btn-dismiss-output">Dismiss</button>
+    <!-- Live transcript bar (hidden when not in live mode) -->
+    <div class="live-bar" id="live-bar" role="status" aria-live="polite">
+      <div class="top-row">
+        <div class="live-indicator">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span>Live Transcript</span>
+        </div>
+        <span class="live-time" id="live-time">0:00</span>
+      </div>
+      <div class="live-level">
+        <div class="live-level-fill" id="live-level-fill"></div>
+      </div>
+      <div class="live-utterances" id="live-utterances">0 utterances</div>
+      <div class="live-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-stop-live">Stop Live</button>
+      </div>
+    </div>
+
+    <!-- Processing bar (hidden when not processing) -->
+    <div class="processing-bar" id="processing-bar">
+      <div class="processing-row">
+        <div class="processing-spinner" aria-hidden="true"></div>
+        <div class="processing-copy">
+          <div class="processing-title" id="processing-title">Processing recording</div>
+          <div class="processing-stage" id="processing-stage">Preparing transcript...</div>
+          <div class="processing-elapsed" id="processing-elapsed"></div>
+          <div class="processing-summary" id="processing-summary"></div>
+        </div>
+      </div>
+      <div class="processing-jobs" id="processing-jobs"></div>
+    </div>
+
+    <!-- Output notice -->
+    <div class="output-notice" id="output-notice">
+      <div class="output-notice-row">
+        <div class="output-notice-icon" id="output-notice-icon">✓</div>
+        <div class="output-notice-copy">
+          <div class="output-notice-title" id="output-notice-title">Saved meeting</div>
+          <div class="output-notice-detail" id="output-notice-detail"></div>
+          <div class="output-notice-path" id="output-notice-path"></div>
+          <div class="output-notice-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-open-output">Open</button>
+            <button class="btn btn-secondary btn-sm" id="btn-draft-output">Create Draft</button>
+            <button class="btn btn-secondary btn-sm" id="btn-open-output-folder">Show in Folder</button>
+            <button class="btn btn-secondary btn-sm" id="btn-dismiss-output">Dismiss</button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Quick note (shown when "Add Note" clicked during recording) -->
-  <div class="quick-note" id="quick-note">
-    <div class="quick-note-row">
-      <input type="text" id="note-inline-input" placeholder="Quick note..." />
-      <button class="btn btn-secondary btn-sm" id="btn-note-save">Save</button>
-    </div>
-  </div>
-
-  <!-- Search -->
-  <div class="search-wrap search-icon">
-    <input class="search-box" type="text" placeholder="Search meetings, memos, and dictations..." id="search-input" />
-  </div>
-
-  <!-- Upcoming meeting suggestion -->
-  <div class="upcoming" id="upcoming">
-    <div class="upcoming-icon">📅</div>
-    <div class="upcoming-info">
-      <div class="upcoming-title" id="upcoming-title"></div>
-      <div class="upcoming-time" id="upcoming-time"></div>
-    </div>
-    <button class="btn btn-primary btn-sm" id="btn-record-upcoming">Record</button>
-  </div>
-
-  <!-- Call detected banner -->
-  <div class="call-detected" id="call-detected-banner">
-    <div class="call-detected-icon">📞</div>
-    <div class="call-detected-info">
-      <div class="call-detected-title" id="call-detected-title">Call detected</div>
-      <div class="call-detected-subtitle" id="call-detected-subtitle">Ready to record this call</div>
-      <div class="call-detected-detail" id="call-detected-detail">Minutes will stay ready while this call is active.</div>
-      <div class="call-detected-health">
-        <span class="call-health-chip" id="call-health-mic">Mic waiting</span>
-        <span class="call-health-chip" id="call-health-audio">Call audio waiting</span>
+    <!-- Quick note (shown when "Add Note" clicked during recording) -->
+    <div class="quick-note" id="quick-note">
+      <div class="quick-note-row">
+        <input type="text" id="note-inline-input" placeholder="Quick note..." />
+        <button class="btn btn-secondary btn-sm" id="btn-note-save">Save</button>
       </div>
     </div>
-    <div class="call-detected-actions">
-      <button class="btn btn-primary btn-sm" id="btn-record-call">Record</button>
-      <button class="btn btn-secondary btn-sm" id="btn-dismiss-call">Dismiss</button>
-    </div>
-  </div>
 
-  <!-- Update available banner -->
-  <div class="update-banner" id="update-banner">
-    <div class="update-banner-info">
-      <div class="update-banner-title" id="update-banner-title">Update available</div>
-      <div class="update-banner-sub" id="update-banner-sub">A new version is ready to install</div>
+    <!-- Search -->
+    <div class="search-wrap search-icon">
+      <input class="search-box" type="text" placeholder="Search meetings, memos, and dictations..." id="search-input" />
     </div>
-    <div class="update-banner-actions">
-      <button class="btn btn-primary btn-sm" id="btn-restart-update">Restart Now</button>
-      <button class="btn btn-secondary btn-sm" id="btn-dismiss-update">Later</button>
-    </div>
-  </div>
 
-  <!-- Markdown viewer (replaces meeting list when a file is open) -->
-  <div class="md-viewer" id="md-viewer">
-    <div class="md-viewer-header">
-      <div class="md-viewer-header-main">
-        <button class="md-viewer-back" id="md-viewer-back" title="Back to meetings">←</button>
-        <span class="md-viewer-filename" id="md-viewer-filename"></span>
-        <span class="md-viewer-kind" id="md-viewer-kind">MD</span>
+    <!-- Upcoming meeting suggestion -->
+    <div class="upcoming" id="upcoming">
+      <div class="upcoming-icon">📅</div>
+      <div class="upcoming-info">
+        <div class="upcoming-title" id="upcoming-title"></div>
+        <div class="upcoming-time" id="upcoming-time"></div>
       </div>
-      <div class="md-viewer-toolbar">
-        <button class="btn md-viewer-mode-btn active" id="md-viewer-preview-btn">Preview</button>
-        <button class="btn md-viewer-mode-btn" id="md-viewer-source-btn">Source</button>
-        <span class="md-viewer-toolbar-sep"></span>
-        <button class="btn" id="md-viewer-promote-btn" hidden>Make Editable Copy</button>
-        <button class="btn" id="md-viewer-save-btn" disabled>Save</button>
-        <button class="btn" id="md-viewer-review-btn" disabled>Review</button>
-        <button class="btn" id="md-viewer-revert-btn" disabled>Revert</button>
-        <span class="md-viewer-status" id="md-viewer-status">Viewing</span>
-      </div>
+      <button class="btn btn-primary btn-sm" id="btn-record-upcoming">Record</button>
     </div>
-    <div class="md-viewer-history" id="md-viewer-history"></div>
-    <div class="md-viewer-review" id="md-viewer-review">
-      <div class="md-viewer-review-head">
-        <div class="md-viewer-review-title">Last Change Review</div>
-        <div class="md-viewer-review-meta" id="md-viewer-review-meta"></div>
-      </div>
-      <div class="md-viewer-review-grid">
-        <div class="md-viewer-review-col">
-          <div class="md-viewer-review-label">Before</div>
-          <pre class="md-viewer-review-pre" id="md-viewer-review-before"></pre>
+
+    <!-- Call detected banner -->
+    <div class="call-detected" id="call-detected-banner">
+      <div class="call-detected-icon">📞</div>
+      <div class="call-detected-info">
+        <div class="call-detected-title" id="call-detected-title">Call detected</div>
+        <div class="call-detected-subtitle" id="call-detected-subtitle">Ready to record this call</div>
+        <div class="call-detected-detail" id="call-detected-detail">Minutes will stay ready while this call is active.
         </div>
-        <div class="md-viewer-review-col">
-          <div class="md-viewer-review-label">Current</div>
-          <pre class="md-viewer-review-pre" id="md-viewer-review-current"></pre>
+        <div class="call-detected-health">
+          <span class="call-health-chip" id="call-health-mic">Mic waiting</span>
+          <span class="call-health-chip" id="call-health-audio">Call audio waiting</span>
         </div>
       </div>
+      <div class="call-detected-actions">
+        <button class="btn btn-primary btn-sm" id="btn-record-call">Record</button>
+        <button class="btn btn-secondary btn-sm" id="btn-dismiss-call">Dismiss</button>
+      </div>
     </div>
-    <div class="md-viewer-content" id="md-viewer-content"></div>
-    <textarea class="md-viewer-editor" id="md-viewer-editor" spellcheck="false"></textarea>
-  </div>
 
-  <!-- Meeting list -->
-  <div class="meetings-scroll" id="meetings-scroll">
-    <div class="empty-state">
-      <div class="title">No meetings yet</div>
-      <div class="sub">Record your first conversation to get started.</div>
+    <!-- Update available banner -->
+    <div class="update-banner" id="update-banner">
+      <div class="update-banner-info">
+        <div class="update-banner-title" id="update-banner-title">Update available</div>
+        <div class="update-banner-sub" id="update-banner-sub">A new version is ready to install</div>
+      </div>
+      <div class="update-banner-actions">
+        <button class="btn btn-primary btn-sm" id="btn-restart-update">Restart Now</button>
+        <button class="btn btn-secondary btn-sm" id="btn-dismiss-update">Later</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Footer -->
-  <div class="footer" id="footer">
-    <div class="footer-actions">
-      <div class="footer-action-primary">
-        <button class="btn btn-primary" id="btn-record">Start Recording</button>
+    <!-- Markdown viewer (replaces meeting list when a file is open) -->
+    <div class="md-viewer" id="md-viewer">
+      <div class="md-viewer-header">
+        <div class="md-viewer-header-main">
+          <button class="md-viewer-back" id="md-viewer-back" title="Back to meetings">←</button>
+          <span class="md-viewer-filename" id="md-viewer-filename"></span>
+          <span class="md-viewer-kind" id="md-viewer-kind">MD</span>
+        </div>
+        <div class="md-viewer-toolbar">
+          <button class="btn md-viewer-mode-btn active" id="md-viewer-preview-btn">Preview</button>
+          <button class="btn md-viewer-mode-btn" id="md-viewer-source-btn">Source</button>
+          <span class="md-viewer-toolbar-sep"></span>
+          <button class="btn" id="md-viewer-promote-btn" hidden>Make Editable Copy</button>
+          <button class="btn" id="md-viewer-save-btn" disabled>Save</button>
+          <button class="btn" id="md-viewer-review-btn" disabled>Review</button>
+          <button class="btn" id="md-viewer-revert-btn" disabled>Revert</button>
+          <span class="md-viewer-status" id="md-viewer-status">Viewing</span>
+        </div>
       </div>
-      <div class="footer-device-picker">
-        <div class="footer-device-label">Microphone</div>
-        <select id="device-picker" class="device-picker" title="Select microphone">
-          <option value="">System Default</option>
-        </select>
+      <div class="md-viewer-history" id="md-viewer-history"></div>
+      <div class="md-viewer-review" id="md-viewer-review">
+        <div class="md-viewer-review-head">
+          <div class="md-viewer-review-title">Last Change Review</div>
+          <div class="md-viewer-review-meta" id="md-viewer-review-meta"></div>
+        </div>
+        <div class="md-viewer-review-grid">
+          <div class="md-viewer-review-col">
+            <div class="md-viewer-review-label">Before</div>
+            <pre class="md-viewer-review-pre" id="md-viewer-review-before"></pre>
+          </div>
+          <div class="md-viewer-review-col">
+            <div class="md-viewer-review-label">Current</div>
+            <pre class="md-viewer-review-pre" id="md-viewer-review-current"></pre>
+          </div>
+        </div>
       </div>
-      <div class="footer-action-secondary">
-        <button class="btn btn-secondary" id="btn-live" title="Start live transcription — ask your agent in Recall for coaching" aria-label="Start live transcription">Live</button>
-        <button class="btn btn-secondary" id="btn-quick-thought">Quick Thought</button>
-        <button class="btn btn-secondary" id="btn-assistant" aria-expanded="false">Recall <span class="recall-nudge" id="recall-nudge" aria-label="Recall has new content"></span></button>
+      <div class="md-viewer-content" id="md-viewer-content"></div>
+      <textarea class="md-viewer-editor" id="md-viewer-editor" spellcheck="false"></textarea>
+    </div>
+
+    <!-- Meeting list -->
+    <div class="meetings-scroll" id="meetings-scroll">
+      <div class="empty-state">
+        <div class="title">No meetings yet</div>
+        <div class="sub">Record your first conversation to get started.</div>
       </div>
     </div>
-  </div>
+
+    <!-- Footer -->
+    <div class="footer" id="footer">
+      <div class="footer-actions">
+        <div class="footer-action-primary">
+          <button class="btn btn-primary" id="btn-record">Start Recording</button>
+        </div>
+        <div class="footer-device-picker">
+          <div class="footer-device-label">Microphone</div>
+          <select id="device-picker" class="device-picker" title="Select microphone">
+            <option value="">System Default</option>
+          </select>
+        </div>
+        <div class="footer-action-secondary">
+          <button class="btn btn-secondary" id="btn-live"
+            title="Start live transcription — ask your agent in Recall for coaching"
+            aria-label="Start live transcription">Live</button>
+          <button class="btn btn-secondary" id="btn-quick-thought">Quick Thought</button>
+          <button class="btn btn-secondary" id="btn-assistant" aria-expanded="false">Recall <span class="recall-nudge"
+              id="recall-nudge" aria-label="Recall has new content"></span></button>
+        </div>
+      </div>
+    </div>
   </div><!-- end .app-left -->
 
   <!-- ── Draggable split handle ── -->
@@ -3186,7 +3672,7 @@
         <button class="btn btn-secondary btn-sm" id="btn-recall-note-save">Save</button>
       </div>
     </div>
-  <div class="recall-status" id="recall-loading">
+    <div class="recall-status" id="recall-loading">
       <div class="processing-spinner" aria-hidden="true"></div>
       <span>Starting Recall...</span>
     </div>
@@ -3226,23 +3712,28 @@
   <div class="artifact-template-overlay" id="artifact-template-overlay">
     <div class="artifact-template-card" role="dialog" aria-modal="true" aria-labelledby="artifact-template-title">
       <div class="artifact-template-title" id="artifact-template-title">Create Draft</div>
-      <div class="artifact-template-sub">Pick the artifact you want Minutes to create from this conversation. It opens immediately in source mode beside Recall.</div>
+      <div class="artifact-template-sub">Pick the artifact you want Minutes to create from this conversation. It opens
+        immediately in source mode beside Recall.</div>
       <div class="artifact-template-list">
         <button class="artifact-template-option" data-artifact-kind="debrief-memo">
           <span class="artifact-template-option-title">Debrief Memo</span>
-          <span class="artifact-template-option-body">A clean internal memo with summary, decisions, action items, open questions, and the next move.</span>
+          <span class="artifact-template-option-body">A clean internal memo with summary, decisions, action items, open
+            questions, and the next move.</span>
         </button>
         <button class="artifact-template-option" data-artifact-kind="follow-up-email">
           <span class="artifact-template-option-title">Follow-up Email</span>
-          <span class="artifact-template-option-body">An external-facing follow-up with key points, decisions, actions, and open questions already scaffolded.</span>
+          <span class="artifact-template-option-body">An external-facing follow-up with key points, decisions, actions,
+            and open questions already scaffolded.</span>
         </button>
         <button class="artifact-template-option" data-artifact-kind="meeting-brief">
           <span class="artifact-template-option-title">Meeting Brief</span>
-          <span class="artifact-template-option-body">A prep doc for the next conversation, with context, prior decisions, open questions, and a suggested agenda.</span>
+          <span class="artifact-template-option-body">A prep doc for the next conversation, with context, prior
+            decisions, open questions, and a suggested agenda.</span>
         </button>
         <button class="artifact-template-option" data-artifact-kind="decision-memo">
           <span class="artifact-template-option-title">Decision Memo</span>
-          <span class="artifact-template-option-body">A crisp memo that locks in one decision, why it was made, the implications, and the actions that follow.</span>
+          <span class="artifact-template-option-body">A crisp memo that locks in one decision, why it was made, the
+            implications, and the actions that follow.</span>
         </button>
       </div>
       <div class="artifact-template-actions">
@@ -3257,7 +3748,8 @@
       <div class="readiness-header">
         <div>
           <div class="readiness-title" id="readiness-title">Readiness Center</div>
-          <div class="readiness-sub">This view only reports what Minutes can verify right now. Optional items stay optional, and unknown states are never hidden behind fake confidence.</div>
+          <div class="readiness-sub">This view only reports what Minutes can verify right now. Optional items stay
+            optional, and unknown states are never hidden behind fake confidence.</div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-readiness-close">Close</button>
       </div>
@@ -3271,7 +3763,8 @@
       <div class="recovery-header">
         <div>
           <div class="recovery-title" id="recovery-title">Recovery Center</div>
-          <div class="recovery-sub" id="recovery-subtitle">Retry preserved captures and watched files that failed to process, or open them directly in a folder.</div>
+          <div class="recovery-sub" id="recovery-subtitle">Retry preserved captures and watched files that failed to
+            process, or open them directly in a folder.</div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-recovery-close">Close</button>
       </div>
@@ -3287,7 +3780,8 @@
       <div class="recovery-header">
         <div>
           <div class="recovery-title" id="jobs-title">Jobs Center</div>
-          <div class="recovery-sub" id="jobs-subtitle">Background processing jobs for recent recordings. Open transcripts early, retry failures, and keep moving.</div>
+          <div class="recovery-sub" id="jobs-subtitle">Background processing jobs for recent recordings. Open
+            transcripts early, retry failures, and keep moving.</div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-jobs-close">Close</button>
       </div>
@@ -3304,7 +3798,8 @@
         <div class="about-brand">
           <div class="about-copy">
             <h2 id="about-title">Minutes</h2>
-            <p>Local-first conversation memory that stays useful in the tray, the terminal, and inside agent workflows.</p>
+            <p>Local-first conversation memory that stays useful in the tray, the terminal, and inside agent workflows.
+            </p>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-about-close">Close</button>
@@ -3312,23 +3807,29 @@
       <div class="about-grid">
         <div class="about-item">
           <div class="about-item-title">Capture</div>
-          <div class="about-item-body">Meetings, memos, and thoughts become structured markdown instead of disappearing into app state.</div>
+          <div class="about-item-body">Meetings, memos, and thoughts become structured markdown instead of disappearing
+            into app state.</div>
         </div>
         <div class="about-item">
           <div class="about-item-title">Search</div>
-          <div class="about-item-body">Timeline, transcript, action items, and context stay queryable across desktop, CLI, and MCP surfaces.</div>
+          <div class="about-item-body">Timeline, transcript, action items, and context stay queryable across desktop,
+            CLI, and MCP surfaces.</div>
         </div>
         <div class="about-item">
           <div class="about-item-title">Local First</div>
-          <div class="about-item-body">Audio capture and storage stay on your machine unless you explicitly opt into external model services.</div>
+          <div class="about-item-body">Audio capture and storage stay on your machine unless you explicitly opt into
+            external model services.</div>
         </div>
         <div class="about-item">
           <div class="about-item-title">Agent Native</div>
-          <div class="about-item-body">Built to work well with Claude Desktop, Claude Code, Cowork, Codex, and other tool-calling assistants.</div>
+          <div class="about-item-body">Built to work well with Claude Desktop, Claude Code, Cowork, Codex, and other
+            tool-calling assistants.</div>
         </div>
       </div>
       <div class="about-footer" id="about-tray-copy">
-        Minutes is open source, markdown-backed, and designed so the artifact remains valuable even outside this app. Power-user tray actions copy the latest summary or transcript and try to paste it into your previous app when macOS automation allows it.
+        Minutes is open source, markdown-backed, and designed so the artifact remains valuable even outside this app.
+        Power-user tray actions copy the latest summary or transcript and try to paste it into your previous app when
+        macOS automation allows it.
       </div>
       <div class="about-controls">
         <div class="about-controls-copy">
@@ -3345,10 +3846,12 @@
       <div class="about-controls">
         <div class="about-controls-group">
           <div class="about-controls-copy">
-            Opt-in global shortcut for quick-thought capture. Hold to record a short thought, or tap to lock recording hands-free and tap again to stop.
+            Opt-in global shortcut for quick-thought capture. Hold to record a short thought, or tap to lock recording
+            hands-free and tap again to stop.
           </div>
           <select class="shortcut-select" id="select-hotkey-shortcut"></select>
-          <div class="about-controls-meta" id="hotkey-status">Off by default. If the shortcut is already owned by another app, Minutes leaves it disabled.</div>
+          <div class="about-controls-meta" id="hotkey-status">Off by default. If the shortcut is already owned by
+            another app, Minutes leaves it disabled.</div>
         </div>
         <button class="btn btn-secondary btn-sm toggle-btn" id="btn-toggle-hotkey">Off</button>
       </div>
@@ -3383,10 +3886,14 @@
           <div class="about-controls-group">
             <div class="about-controls-copy">Quick Thought shortcut</div>
             <div class="settings-section-inline">
-              <button id="shortcut-recorder-quick_thought" class="btn btn-secondary btn-sm shortcut-recorder-btn settings-shortcut-key" data-slot="quick_thought">&#8984; Shift M</button>
-              <span class="special-key-link settings-hint-link" data-slot="quick_thought">or <u>Caps Lock</u> / <u>fn</u></span>
+              <button id="shortcut-recorder-quick_thought"
+                class="btn btn-secondary btn-sm shortcut-recorder-btn settings-shortcut-key"
+                data-slot="quick_thought">&#8984; Shift M</button>
+              <span class="special-key-link settings-hint-link" data-slot="quick_thought">or <u>Caps Lock</u> /
+                <u>fn</u></span>
             </div>
-            <div class="about-controls-meta" id="shortcut-status-quick_thought">Hold to record a quick thought, or tap to lock and tap again to stop.</div>
+            <div class="about-controls-meta" id="shortcut-status-quick_thought">Hold to record a quick thought, or tap
+              to lock and tap again to stop.</div>
           </div>
           <button class="btn btn-secondary btn-sm toggle-btn" id="shortcut-toggle-quick_thought">Off</button>
         </div>
@@ -3400,10 +3907,14 @@
           <div class="about-controls-group">
             <div class="about-controls-copy">Dictation shortcut</div>
             <div class="settings-section-inline">
-              <button id="shortcut-recorder-dictation" class="btn btn-secondary btn-sm shortcut-recorder-btn settings-shortcut-key" data-slot="dictation">&#8984; Shift Space</button>
-              <span class="special-key-link settings-hint-link" data-slot="dictation">or <u>Caps Lock</u> / <u>fn</u></span>
+              <button id="shortcut-recorder-dictation"
+                class="btn btn-secondary btn-sm shortcut-recorder-btn settings-shortcut-key"
+                data-slot="dictation">&#8984; Shift Space</button>
+              <span class="special-key-link settings-hint-link" data-slot="dictation">or <u>Caps Lock</u> /
+                <u>fn</u></span>
             </div>
-            <div class="about-controls-meta" id="shortcut-status-dictation">Hold to dictate, or tap to lock and tap again to stop.</div>
+            <div class="about-controls-meta" id="shortcut-status-dictation">Hold to dictate, or tap to lock and tap
+              again to stop.</div>
           </div>
           <button class="btn btn-secondary btn-sm toggle-btn" id="shortcut-toggle-dictation">Off</button>
         </div>
@@ -3458,6 +3969,15 @@
         <div class="about-item-title">TRANSCRIPTION</div>
         <div class="about-controls">
           <div class="about-controls-group">
+            <div class="about-controls-copy">Engine</div>
+            <select id="settings-transcription-engine" class="settings-field">
+              <option value="whisper">Whisper — broad language support, built-in</option>
+              <option value="parakeet">Parakeet — lower WER, fast on Apple Silicon</option>
+            </select>
+          </div>
+        </div>
+        <div class="about-controls" id="settings-whisper-section">
+          <div class="about-controls-group">
             <div class="about-controls-copy">Whisper model</div>
             <select id="settings-whisper-model" class="settings-field">
               <option value="tiny">tiny — 75 MB, fastest, lower quality</option>
@@ -3472,10 +3992,21 @@
             </div>
           </div>
         </div>
+        <div class="about-controls is-hidden" id="settings-parakeet-section">
+          <div class="about-controls-group">
+            <div class="about-controls-copy">Parakeet model</div>
+            <select id="settings-parakeet-model" class="settings-field">
+              <option value="tdt-ctc-110m">tdt-ctc-110m — 110M params, English, fastest</option>
+              <option value="tdt-600m">tdt-600m — 600M params, multilingual v3, best quality</option>
+            </select>
+            <div class="about-controls-meta">Requires parakeet.cpp installed. See <code>minutes setup --parakeet</code>.</div>
+          </div>
+        </div>
         <div class="about-controls">
           <div class="about-controls-group">
             <div class="about-controls-copy">Transcription language</div>
-            <div class="about-controls-meta">Leave this on Auto-detect for mixed or unknown audio. Pick a language only when Whisper is consistently guessing wrong.</div>
+            <div class="about-controls-meta">Leave this on Auto-detect for mixed or unknown audio. Pick a language only
+              when Whisper is consistently guessing wrong.</div>
             <select id="settings-whisper-language" class="settings-field">
               <option value="">Auto-detect</option>
               <option value="af">Afrikaans</option>
@@ -3593,7 +4124,9 @@
         <div class="about-controls">
           <div class="about-controls-group">
             <div class="about-controls-copy">Automatic pipeline summarization</div>
-            <div class="about-controls-meta settings-meta-inline">By default, Claude summarizes your meetings conversationally via MCP — no configuration needed. Turn this on only if you want summaries generated automatically in the recording pipeline.</div>
+            <div class="about-controls-meta settings-meta-inline">By default, Claude summarizes your meetings
+              conversationally via MCP — no configuration needed. Turn this on only if you want summaries generated
+              automatically in the recording pipeline.</div>
             <select id="settings-summarization-engine" class="settings-field">
               <option value="none">Off — Claude summarizes when you ask (recommended)</option>
               <option value="agent">Agent CLI — uses your Claude Code or Codex subscription</option>
@@ -3638,7 +4171,9 @@
         <div class="about-controls">
           <div class="about-controls-group">
             <div class="about-controls-copy">Google Meet detection (experimental)</div>
-            <div class="about-controls-meta">Opt-in browser integration for Meet in Chrome/Safari. Uses stronger meeting-URL matching, may require macOS browser automation permission, and backs off after failures instead of probing every second.</div>
+            <div class="about-controls-meta">Opt-in browser integration for Meet in Chrome/Safari. Uses stronger
+              meeting-URL matching, may require macOS browser automation permission, and backs off after failures
+              instead of probing every second.</div>
           </div>
           <button class="btn btn-secondary btn-sm toggle-btn" id="settings-call-detection-google-meet">Off</button>
         </div>
@@ -3654,7 +4189,8 @@
         <div class="about-controls">
           <div class="about-controls-group">
             <div class="about-controls-copy">Capture screen context during recordings</div>
-            <div class="about-controls-meta">Screenshots sent to vision LLM for context. Requires Screen Recording permission.</div>
+            <div class="about-controls-meta">Screenshots sent to vision LLM for context. Requires Screen Recording
+              permission.</div>
           </div>
           <button class="btn btn-secondary btn-sm toggle-btn" id="settings-screen-context">Off</button>
         </div>
@@ -3725,11 +4261,13 @@
         <div class="about-item-title">DIAGNOSTICS</div>
         <div class="about-controls">
           <div class="about-controls-copy">System readiness and audio permission checks</div>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('settings-overlay').classList.remove('active');document.getElementById('btn-readiness').click();">Readiness</button>
+          <button class="btn btn-secondary btn-sm"
+            onclick="document.getElementById('settings-overlay').classList.remove('active');document.getElementById('btn-readiness').click();">Readiness</button>
         </div>
         <div class="about-controls">
           <div class="about-controls-copy">Retry failed captures and unprocessed audio files</div>
-          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('settings-overlay').classList.remove('active');document.getElementById('btn-recovery').click();">Recovery</button>
+          <button class="btn btn-secondary btn-sm"
+            onclick="document.getElementById('settings-overlay').classList.remove('active');document.getElementById('btn-recovery').click();">Recovery</button>
         </div>
       </div>
 
@@ -3747,7 +4285,10 @@
       text-align: center;
     }
 
-    .onboarding-icon { font-size: 48px; margin-bottom: 12px; }
+    .onboarding-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
 
     .onboarding-content h2 {
       font-size: 22px;
@@ -3761,7 +4302,9 @@
       margin-bottom: 24px;
     }
 
-    .onboarding-steps { text-align: left; }
+    .onboarding-steps {
+      text-align: left;
+    }
 
     .onboarding-step {
       padding: 14px 16px;
@@ -3770,8 +4313,14 @@
       margin-bottom: 12px;
     }
 
-    .onboarding-step.disabled { opacity: 0.4; pointer-events: none; }
-    .onboarding-step.done { border-color: var(--green); }
+    .onboarding-step.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .onboarding-step.done {
+      border-color: var(--green);
+    }
 
     .step-header {
       display: flex;
@@ -3799,7 +4348,11 @@
       color: var(--success-contrast);
     }
 
-    .step-title { font-size: 14px; font-weight: 500; flex: 1; }
+    .step-title {
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+    }
 
     .step-status {
       font-size: 11px;
@@ -3807,13 +4360,29 @@
       font-weight: 600;
     }
 
-    .step-body { padding-left: 32px; }
-    .step-body p { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+    .step-body {
+      padding-left: 32px;
+    }
 
-    .model-options { display: flex; flex-direction: column; gap: 6px; }
-    .model-btn { text-align: left; }
+    .step-body p {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
 
-    .download-progress { margin-top: 10px; }
+    .model-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .model-btn {
+      text-align: left;
+    }
+
+    .download-progress {
+      margin-top: 10px;
+    }
 
     .progress-bar {
       height: 4px;
@@ -3831,7 +4400,10 @@
       transition: width 0.3s ease;
     }
 
-    .progress-text { font-size: 11px; color: var(--text-secondary); }
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
   </style>
 
   <link rel="stylesheet" href="vendor/xterm/xterm.css">
@@ -4118,8 +4690,8 @@
       if (!cue) return;
       try {
         cue.currentTime = 0;
-        cue.play().catch(() => {});
-      } catch (_) {}
+        cue.play().catch(() => { });
+      } catch (_) { }
     }
 
     function currentModeLabel(mode) {
@@ -4191,9 +4763,9 @@
         detail.className = 'processing-job-detail';
         detail.textContent =
           job.stage
-            || (job.state === 'transcript-only'
-              ? 'Transcript is ready. The richer summary is still running.'
-              : 'Waiting for background processing.');
+          || (job.state === 'transcript-only'
+            ? 'Transcript is ready. The richer summary is still running.'
+            : 'Waiting for background processing.');
 
         const meta = document.createElement('div');
         meta.className = 'processing-job-meta';
@@ -4306,9 +4878,9 @@
               ? 'Finished processing.'
               : job.state === 'needs-review'
                 ? 'Transcript needs review. Raw capture was preserved for retry.'
-              : job.state === 'transcript-only'
-                ? 'Transcript is ready while enrichment continues.'
-                : 'Queued for background processing.');
+                : job.state === 'transcript-only'
+                  ? 'Transcript is ready while enrichment continues.'
+                  : 'Queued for background processing.');
 
           const path = document.createElement('div');
           path.className = 'recovery-item-path';
@@ -4511,38 +5083,38 @@
           } catch { isLiveTranscript = false; liveBar.classList.remove('active'); }
 
           if (!isLiveTranscript) {
-          statusPill.className = 'status-pill';
-          statusPill.textContent = 'idle';
-          recordingLabel.textContent = 'Recording';
-          recordingSourceHealth.classList.remove('active');
-          processingTitle.textContent = 'Processing recording';
-          recordingBar.classList.remove('active');
-          processingBar.classList.remove('active');
-          processingSummary.textContent = '';
-          processingJobsEl.replaceChildren();
-          quickNote.classList.remove('active');
-          setFooterCaptureMode(false);
+            statusPill.className = 'status-pill';
+            statusPill.textContent = 'idle';
+            recordingLabel.textContent = 'Recording';
+            recordingSourceHealth.classList.remove('active');
+            processingTitle.textContent = 'Processing recording';
+            recordingBar.classList.remove('active');
+            processingBar.classList.remove('active');
+            processingSummary.textContent = '';
+            processingJobsEl.replaceChildren();
+            quickNote.classList.remove('active');
+            setFooterCaptureMode(false);
 
-          if (activeCallSession && !activeCallSession.dismissed) {
-            callBanner.classList.add('active');
-          }
-
-          // Clear processing elapsed timer
-          if (processingTimerInterval) { clearInterval(processingTimerInterval); processingTimerInterval = null; }
-          processingStartTime = null;
-          processingElapsed.textContent = '';
-
-          // Slow down polling when recording/processing/live stops (T5)
-          if (wasRecording || wasProcessing || wasLive) {
-            stopFastPoll();
-            loadMeetings(); // Refresh list
-            if (jobsOverlay.classList.contains('active')) loadProcessingJobsCenter();
-
-            // Auto-open the result when processing completes successfully
-            if (wasProcessing && latestOutput && latestOutput.kind === 'saved') {
-              openMeetingDetail(latestOutput.path);
+            if (activeCallSession && !activeCallSession.dismissed) {
+              callBanner.classList.add('active');
             }
-          }
+
+            // Clear processing elapsed timer
+            if (processingTimerInterval) { clearInterval(processingTimerInterval); processingTimerInterval = null; }
+            processingStartTime = null;
+            processingElapsed.textContent = '';
+
+            // Slow down polling when recording/processing/live stops (T5)
+            if (wasRecording || wasProcessing || wasLive) {
+              stopFastPoll();
+              loadMeetings(); // Refresh list
+              if (jobsOverlay.classList.contains('active')) loadProcessingJobsCenter();
+
+              // Auto-open the result when processing completes successfully
+              if (wasProcessing && latestOutput && latestOutput.kind === 'saved') {
+                openMeetingDetail(latestOutput.path);
+              }
+            }
           } // end if (!isLiveTranscript)
         }
       } catch (e) {
@@ -5863,9 +6435,9 @@
           const mins = next.minutes_until;
           document.getElementById('upcoming-time').textContent =
             mins <= 0 ? 'Starting now' :
-            mins === 1 ? 'In 1 minute' :
-            mins < 60 ? `In ${mins} minutes` :
-            `In ${Math.floor(mins / 60)}h ${mins % 60}m`;
+              mins === 1 ? 'In 1 minute' :
+                mins < 60 ? `In ${mins} minutes` :
+                  `In ${Math.floor(mins / 60)}h ${mins % 60}m`;
           upcoming.classList.add('active');
 
           document.getElementById('btn-record-upcoming').onclick = async () => {
@@ -5906,7 +6478,7 @@
         setSettingsToggle('settings-notifications', notifyOnCompletion);
         setSettingsToggle('settings-cues', playCaptureCues);
         // Autostart
-        try { const autoOn = await invoke('cmd_get_autostart'); setSettingsToggle('settings-autostart', autoOn); } catch(e) { console.error('autostart check:', e); }
+        try { const autoOn = await invoke('cmd_get_autostart'); setSettingsToggle('settings-autostart', autoOn); } catch (e) { console.error('autostart check:', e); }
         // Legacy hotkey settings -- guarded for removed HTML elements
         if (document.getElementById('settings-hotkey')) {
           setSettingsToggle('settings-hotkey', hotkeyEnabled);
@@ -5924,6 +6496,21 @@
           const hkStatus = document.getElementById('settings-hotkey-status');
           if (hkStatus) hkStatus.textContent = hotkeyEnabled ? 'Active' : 'Off';
         }
+        // Engine selector
+        const eng = s.transcription.engine || 'whisper';
+        const parakeetCompiled = s.transcription.parakeet_compiled || false;
+        const engineSelect = document.getElementById('settings-transcription-engine');
+        const parakeetOpt = engineSelect.querySelector('option[value="parakeet"]');
+        if (parakeetOpt) {
+          parakeetOpt.disabled = !parakeetCompiled;
+          parakeetOpt.textContent = parakeetCompiled
+            ? 'Parakeet — lower WER, fast on Apple Silicon'
+            : 'Parakeet — not compiled (rebuild with --features parakeet)';
+        }
+        engineSelect.value = eng;
+        document.getElementById('settings-whisper-section').classList.toggle('is-hidden', eng !== 'whisper');
+        document.getElementById('settings-parakeet-section').classList.toggle('is-hidden', eng !== 'parakeet');
+        document.getElementById('settings-parakeet-model').value = s.transcription.parakeet_model || 'tdt-ctc-110m';
         document.getElementById('settings-whisper-model').value = s.transcription.model;
         const dl = s.transcription.downloaded_models || [];
         const selectedModel = s.transcription.model;
@@ -5940,47 +6527,47 @@
         const agentCmdRow = document.getElementById('settings-agent-command-row');
         agentCmdRow.classList.toggle('is-hidden', s.summarization.engine !== 'agent');
         try {
-        const agentCmdSel = document.getElementById('settings-agent-command');
-        const sumAgents = await invoke('cmd_list_agents');
-        const currentCmd = s.summarization.agent_command || 'claude';
-        agentCmdSel.replaceChildren();
-        for (const a of sumAgents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; agentCmdSel.appendChild(o); }
-        if (!sumAgents.find(a => a.name === currentCmd)) {
-          const o = document.createElement('option'); o.value = currentCmd; o.textContent = currentCmd + ' (custom)'; agentCmdSel.appendChild(o);
-        }
-        agentCmdSel.value = currentCmd;
-        document.getElementById('settings-agent-command-status').textContent = sumAgents.find(a => a.name === currentCmd) ? 'Installed' : 'Custom command';
-        } catch(e) { console.error('agent command picker:', e); }
+          const agentCmdSel = document.getElementById('settings-agent-command');
+          const sumAgents = await invoke('cmd_list_agents');
+          const currentCmd = s.summarization.agent_command || 'claude';
+          agentCmdSel.replaceChildren();
+          for (const a of sumAgents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; agentCmdSel.appendChild(o); }
+          if (!sumAgents.find(a => a.name === currentCmd)) {
+            const o = document.createElement('option'); o.value = currentCmd; o.textContent = currentCmd + ' (custom)'; agentCmdSel.appendChild(o);
+          }
+          agentCmdSel.value = currentCmd;
+          document.getElementById('settings-agent-command-status').textContent = sumAgents.find(a => a.name === currentCmd) ? 'Installed' : 'Custom command';
+        } catch (e) { console.error('agent command picker:', e); }
         setSettingsToggle('settings-screen-share', Boolean(s.privacy?.hide_from_screen_share));
         setSettingsToggle('settings-screen-context', s.screen_context.enabled);
         document.getElementById('settings-screen-interval-row').classList.toggle('is-hidden', !s.screen_context.enabled);
         document.getElementById('settings-screen-interval').value = String(s.screen_context.interval_secs);
         try {
-        const agents = await invoke('cmd_list_agents');
-        const sel = document.getElementById('settings-agent');
-        sel.replaceChildren();
-        for (const a of agents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; sel.appendChild(o); }
-        sel.value = s.assistant.agent;
-        document.getElementById('settings-agent-status').textContent = agents.length + ' agent(s) installed';
-        } catch(e) { console.error('agent list:', e); }
+          const agents = await invoke('cmd_list_agents');
+          const sel = document.getElementById('settings-agent');
+          sel.replaceChildren();
+          for (const a of agents) { const o = document.createElement('option'); o.value = a.name; o.textContent = a.name; sel.appendChild(o); }
+          sel.value = s.assistant.agent;
+          document.getElementById('settings-agent-status').textContent = agents.length + ' agent(s) installed';
+        } catch (e) { console.error('agent list:', e); }
         // Agent launch flags — separate skip-permissions toggle from extra args
         try {
-        const argsArr = s.assistant.agent_args || [];
-        const skipPerm = argsArr.includes('--dangerously-skip-permissions');
-        const extraArgs = argsArr.filter(a => a !== '--dangerously-skip-permissions');
-        setSettingsToggle('settings-skip-permissions', skipPerm);
-        document.getElementById('settings-skip-permissions-hint').textContent = skipPerm
-          ? 'The agent will run without asking for approval. Takes effect next session.'
-          : 'The agent will ask before running tools like file edits and shell commands.';
-        // Only show the toggle for agents that support it (claude, codex)
-        const skipRow = document.getElementById('settings-skip-permissions-row');
-        const skipHint = document.getElementById('settings-skip-permissions-hint');
-        const supportsSkip = ['claude', 'codex'].includes(s.assistant.agent);
-        skipRow.classList.toggle('is-hidden', !supportsSkip);
-        skipHint.classList.toggle('is-hidden', !supportsSkip);
-        document.getElementById('settings-agent-args').value = extraArgs.join(' ');
-        document.getElementById('settings-agent-args-status').textContent = extraArgs.length ? extraArgs.length + ' flag(s)' : '';
-        } catch(e) { console.error('agent flags:', e); }
+          const argsArr = s.assistant.agent_args || [];
+          const skipPerm = argsArr.includes('--dangerously-skip-permissions');
+          const extraArgs = argsArr.filter(a => a !== '--dangerously-skip-permissions');
+          setSettingsToggle('settings-skip-permissions', skipPerm);
+          document.getElementById('settings-skip-permissions-hint').textContent = skipPerm
+            ? 'The agent will run without asking for approval. Takes effect next session.'
+            : 'The agent will ask before running tools like file edits and shell commands.';
+          // Only show the toggle for agents that support this flag (claude, codex)
+          const skipRow = document.getElementById('settings-skip-permissions-row');
+          const skipHint = document.getElementById('settings-skip-permissions-hint');
+          const supportsSkip = ['claude', 'codex'].includes(s.assistant.agent);
+          skipRow.classList.toggle('is-hidden', !supportsSkip);
+          skipHint.classList.toggle('is-hidden', !supportsSkip);
+          document.getElementById('settings-agent-args').value = extraArgs.join(' ');
+          document.getElementById('settings-agent-args-status').textContent = extraArgs.length ? extraArgs.length + ' flag(s)' : '';
+        } catch (e) { console.error('agent flags:', e); }
         // Call detection settings
         if (s.call_detection) {
           setSettingsToggle('settings-call-detection', s.call_detection.enabled);
@@ -6136,15 +6723,15 @@
     async function loadStorageStats() {
       try {
         const st = await invoke('cmd_get_storage_stats');
-        const f = (b) => b > 1073741824 ? (b/1073741824).toFixed(1)+' GB' : b > 1048576 ? (b/1048576).toFixed(0)+' MB' : (b/1024).toFixed(0)+' KB';
+        const f = (b) => b > 1073741824 ? (b / 1073741824).toFixed(1) + ' GB' : b > 1048576 ? (b / 1048576).toFixed(0) + ' MB' : (b / 1024).toFixed(0) + ' KB';
         document.getElementById('settings-storage-info').textContent =
-          'Meetings: '+f(st.meetings.bytes)+' ('+st.meetings.count+' files)  •  Memos: '+f(st.memos.bytes)+' ('+st.memos.count+')  •  Models: '+f(st.models.bytes)+'  •  Screenshots: '+f(st.screens.bytes)+'  •  Total: '+f(st.total_bytes);
-      } catch(e) { document.getElementById('settings-storage-info').textContent = 'Could not load.'; }
+          'Meetings: ' + f(st.meetings.bytes) + ' (' + st.meetings.count + ' files)  •  Memos: ' + f(st.memos.bytes) + ' (' + st.memos.count + ')  •  Models: ' + f(st.models.bytes) + '  •  Screenshots: ' + f(st.screens.bytes) + '  •  Total: ' + f(st.total_bytes);
+      } catch (e) { document.getElementById('settings-storage-info').textContent = 'Could not load.'; }
     }
     // Settings General handlers — delegate to existing app logic
     document.getElementById('settings-notifications').addEventListener('click', async () => {
       const next = !notifyOnCompletion;
-      try { await invoke('cmd_set_completion_notifications', { enabled: next }); setNotificationToggle(next); setSettingsToggle('settings-notifications', next); } catch(e) { console.error(e); }
+      try { await invoke('cmd_set_completion_notifications', { enabled: next }); setNotificationToggle(next); setSettingsToggle('settings-notifications', next); } catch (e) { console.error(e); }
     });
     document.getElementById('settings-cues').addEventListener('click', () => {
       setCueToggle(!playCaptureCues);
@@ -6153,7 +6740,7 @@
     document.getElementById('settings-autostart').addEventListener('click', async () => {
       const isOn = await invoke('cmd_get_autostart').catch(() => false);
       const next = !isOn;
-      try { await invoke('cmd_set_autostart', { enabled: next }); setSettingsToggle('settings-autostart', next); } catch(e) { console.error('autostart toggle:', e); }
+      try { await invoke('cmd_set_autostart', { enabled: next }); setSettingsToggle('settings-autostart', next); } catch (e) { console.error('autostart toggle:', e); }
     });
     // Legacy hotkey settings — guarded for removed HTML elements
     if (document.getElementById('settings-hotkey')) {
@@ -6176,8 +6763,18 @@
     }
 
     // Settings change handlers
+    document.getElementById('settings-transcription-engine').addEventListener('change', async (e) => {
+      await invoke('cmd_set_setting', { section: 'transcription', key: 'engine', value: e.target.value });
+      document.getElementById('settings-whisper-section').classList.toggle('is-hidden', e.target.value !== 'whisper');
+      document.getElementById('settings-parakeet-section').classList.toggle('is-hidden', e.target.value !== 'parakeet');
+    });
+    document.getElementById('settings-parakeet-model').addEventListener('change', async (e) => {
+      await invoke('cmd_set_setting', { section: 'transcription', key: 'parakeet_model', value: e.target.value });
+      const s = await invoke('cmd_get_settings');
+      document.getElementById('settings-parakeet-model').value = s.transcription.parakeet_model || 'tdt-ctc-110m';
+    });
     document.getElementById('settings-whisper-model').addEventListener('change', async (e) => {
-      await invoke('cmd_set_setting', {section:'transcription',key:'model',value:e.target.value});
+      await invoke('cmd_set_setting', { section: 'transcription', key: 'model', value: e.target.value });
       const s = await invoke('cmd_get_settings');
       const dl = s.transcription.downloaded_models || [];
       const isDownloaded = dl.includes(e.target.value);
@@ -6204,35 +6801,35 @@
       btn.textContent = 'Download';
     });
     document.getElementById('settings-whisper-language').addEventListener('change', async (e) => {
-      await invoke('cmd_set_setting', {section:'transcription',key:'language',value:e.target.value});
+      await invoke('cmd_set_setting', { section: 'transcription', key: 'language', value: e.target.value });
     });
     document.getElementById('settings-diarization').addEventListener('click', async () => {
       const s = await invoke('cmd_get_settings');
       // Toggle: none → pyannote-rs, anything else (auto/pyannote-rs/pyannote) → none
-      const next = s.diarization.engine==='none'?'pyannote-rs':'none';
-      await invoke('cmd_set_setting', {section:'diarization',key:'engine',value:next});
-      setSettingsToggle('settings-diarization', next!=='none');
+      const next = s.diarization.engine === 'none' ? 'pyannote-rs' : 'none';
+      await invoke('cmd_set_setting', { section: 'diarization', key: 'engine', value: next });
+      setSettingsToggle('settings-diarization', next !== 'none');
     });
     document.getElementById('settings-summarization-engine').addEventListener('change', async (e) => {
-      await invoke('cmd_set_setting', {section:'summarization',key:'engine',value:e.target.value});
+      await invoke('cmd_set_setting', { section: 'summarization', key: 'engine', value: e.target.value });
       document.getElementById('settings-agent-command-row').classList.toggle('is-hidden', e.target.value !== 'agent');
       const s = await invoke('cmd_get_settings'); updateSumStatus(s);
     });
     document.getElementById('settings-agent-command').addEventListener('change', async (e) => {
-      await invoke('cmd_set_setting', {section:'summarization',key:'agent_command',value:e.target.value});
+      await invoke('cmd_set_setting', { section: 'summarization', key: 'agent_command', value: e.target.value });
       const agents = await invoke('cmd_list_agents');
       document.getElementById('settings-agent-command-status').textContent = agents.find(a => a.name === e.target.value) ? 'Installed' : 'Not found on this machine';
     });
     document.getElementById('settings-screen-context').addEventListener('click', async () => {
       const s = await invoke('cmd_get_settings');
       const next = !s.screen_context.enabled;
-      await invoke('cmd_set_setting', {section:'screen_context',key:'enabled',value:String(next)});
+      await invoke('cmd_set_setting', { section: 'screen_context', key: 'enabled', value: String(next) });
       setSettingsToggle('settings-screen-context', next);
       document.getElementById('settings-screen-interval-row').classList.toggle('is-hidden', !next);
     });
-    document.getElementById('settings-screen-interval').addEventListener('change', (e) => invoke('cmd_set_setting', {section:'screen_context',key:'interval_secs',value:e.target.value}));
+    document.getElementById('settings-screen-interval').addEventListener('change', (e) => invoke('cmd_set_setting', { section: 'screen_context', key: 'interval_secs', value: e.target.value }));
     document.getElementById('settings-agent').addEventListener('change', async (e) => {
-      await invoke('cmd_set_setting', {section:'assistant',key:'agent',value:e.target.value});
+      await invoke('cmd_set_setting', { section: 'assistant', key: 'agent', value: e.target.value });
       const supportsSkip = ['claude', 'codex'].includes(e.target.value);
       document.getElementById('settings-skip-permissions-row').classList.toggle('is-hidden', !supportsSkip);
       document.getElementById('settings-skip-permissions-hint').classList.toggle('is-hidden', !supportsSkip);
@@ -6244,7 +6841,7 @@
       const parts = [];
       if (skipOn) parts.push('--dangerously-skip-permissions');
       if (extra) parts.push(...extra.split(/\s+/));
-      await invoke('cmd_set_setting', {section:'assistant',key:'agent_args',value:parts.join(' ')});
+      await invoke('cmd_set_setting', { section: 'assistant', key: 'agent_args', value: parts.join(' ') });
       document.getElementById('settings-skip-permissions-hint').textContent = skipOn
         ? 'The agent will run without asking for approval. Takes effect next session.'
         : 'The agent will ask before running tools like file edits and shell commands.';
@@ -6263,15 +6860,15 @@
     document.getElementById('settings-call-detection').addEventListener('click', async () => {
       const s = await invoke('cmd_get_settings');
       const next = !s.call_detection.enabled;
-      await invoke('cmd_set_setting', {section:'call_detection',key:'enabled',value:String(next)});
+      await invoke('cmd_set_setting', { section: 'call_detection', key: 'enabled', value: String(next) });
       setSettingsToggle('settings-call-detection', next);
     });
-    document.getElementById('settings-call-detection-polling-interval').addEventListener('change', (e) => invoke('cmd_set_setting', {section:'call_detection',key:'poll_interval_secs',value:e.target.value}));
-    document.getElementById('settings-call-detection-cooldown').addEventListener('change', (e) => invoke('cmd_set_setting', {section:'call_detection',key:'cooldown_minutes',value:e.target.value}));
+    document.getElementById('settings-call-detection-polling-interval').addEventListener('change', (e) => invoke('cmd_set_setting', { section: 'call_detection', key: 'poll_interval_secs', value: e.target.value }));
+    document.getElementById('settings-call-detection-cooldown').addEventListener('change', (e) => invoke('cmd_set_setting', { section: 'call_detection', key: 'cooldown_minutes', value: e.target.value }));
     document.getElementById('settings-call-detection-google-meet').addEventListener('click', async () => {
       const s = await invoke('cmd_get_settings');
       const next = !Boolean(s.call_detection.google_meet_enabled);
-      await invoke('cmd_set_setting', {section:'call_detection',key:'google_meet_enabled',value:String(next)});
+      await invoke('cmd_set_setting', { section: 'call_detection', key: 'google_meet_enabled', value: String(next) });
       setSettingsToggle('settings-call-detection-google-meet', next);
     });
 
@@ -6300,7 +6897,7 @@
       const button = document.getElementById('settings-dictation-shortcut');
       const enabled = button.textContent === 'On';
       if (!enabled) {
-        await invoke('cmd_set_setting', {section:'dictation',key:'shortcut',value:e.target.value});
+        await invoke('cmd_set_setting', { section: 'dictation', key: 'shortcut', value: e.target.value });
         document.getElementById('settings-dictation-shortcut-status').textContent = `${e.target.value} saved. Toggle the standard shortcut on when you're ready to use it.`;
         return;
       }
@@ -6318,12 +6915,12 @@
         document.getElementById('settings-dictation-shortcut-status').textContent = String(e2);
       }
     });
-    document.getElementById('settings-dictation-model').addEventListener('change', (e) => invoke('cmd_set_setting', {section:'dictation',key:'model',value:e.target.value}));
-    document.getElementById('settings-dictation-silence').addEventListener('change', (e) => invoke('cmd_set_setting', {section:'dictation',key:'silence_timeout_ms',value:e.target.value}));
+    document.getElementById('settings-dictation-model').addEventListener('change', (e) => invoke('cmd_set_setting', { section: 'dictation', key: 'model', value: e.target.value }));
+    document.getElementById('settings-dictation-silence').addEventListener('change', (e) => invoke('cmd_set_setting', { section: 'dictation', key: 'silence_timeout_ms', value: e.target.value }));
     document.getElementById('settings-dictation-daily-note').addEventListener('click', async () => {
       const btn = document.getElementById('settings-dictation-daily-note');
       const next = btn.textContent !== 'On';
-      await invoke('cmd_set_setting', {section:'dictation',key:'daily_note_log',value:String(next)});
+      await invoke('cmd_set_setting', { section: 'dictation', key: 'daily_note_log', value: String(next) });
       setSettingsToggle('settings-dictation-daily-note', next);
     });
 
@@ -6359,7 +6956,7 @@
       setSettingsToggle('settings-live-shortcut', settings.enabled);
       const select = document.getElementById('settings-live-shortcut-select');
       if (select) select.value = settings.shortcut;
-    }).catch(() => {});
+    }).catch(() => { });
 
     // ── Unified Shortcut Recorder ──────────────────────────────
     // Replaces the old 3-system approach (dropdown, dropdown, raw-key capture)
@@ -6990,7 +7587,7 @@
           section: 'dictation',
           key: 'hotkey_enabled',
           value: 'false',
-        }).catch(() => {});
+        }).catch(() => { });
         applyDictationHotkeyStatus({
           state: 'failed',
           enabled: false,
@@ -7219,7 +7816,7 @@
               sessionId: SESSION_ID,
               cols: recallTerminal.cols,
               rows: recallTerminal.rows,
-            }).catch(() => {});
+            }).catch(() => { });
           }
         }, 100);
       });
@@ -7387,7 +7984,7 @@
                   sessionId: SESSION_ID,
                   cols: recallTerminal.cols,
                   rows: recallTerminal.rows,
-                }).catch(() => {});
+                }).catch(() => { });
               }
             });
           }
@@ -7485,12 +8082,12 @@
           } else {
             localStorage.removeItem('minutes-pending-update');
           }
-        }).catch(() => {});
+        }).catch(() => { });
       }
-    } catch (_) {}
+    } catch (_) { }
     currentWindow.listen('update-ready', (event) => {
       const { version, body } = event.payload;
-      try { localStorage.setItem('minutes-pending-update', JSON.stringify({ version, body })); } catch (_) {}
+      try { localStorage.setItem('minutes-pending-update', JSON.stringify({ version, body })); } catch (_) { }
       showUpdateBanner(version, body);
     });
     document.getElementById('btn-restart-update').addEventListener('click', async () => {
@@ -7509,7 +8106,7 @@
     });
     document.getElementById('btn-dismiss-update').addEventListener('click', () => {
       if (updateBanner) updateBanner.classList.remove('active');
-      try { localStorage.removeItem('minutes-pending-update'); } catch (_) {}
+      try { localStorage.removeItem('minutes-pending-update'); } catch (_) { }
     });
 
     // ── Listen for live transcript events (T6: immediate UI feedback) ──
@@ -7579,7 +8176,7 @@
       if (wasFullscreen && !fs && recallExpanded) {
         await currentWindow.setSize(
           new window.__TAURI__.window.LogicalSize(EXPANDED_WIDTH, 640)
-        ).catch(() => {});
+        ).catch(() => { });
         if (recallFitAddon) recallFitAddon.fit();
       }
       wasFullscreen = fs;
@@ -7615,7 +8212,7 @@
         recallThemeHandler = null;
       }
       if (recallTerminal) {
-        try { recallTerminal.dispose(); } catch (_) {}
+        try { recallTerminal.dispose(); } catch (_) { }
         recallTerminal = null;
         recallFitAddon = null;
       }
@@ -7628,7 +8225,7 @@
     document.getElementById('btn-recall-restart').addEventListener('click', async () => {
       recallExitBanner.classList.remove('active');
       // Kill any zombie backend session left after natural PTY exit
-      try { await invoke('cmd_pty_kill', { sessionId: SESSION_ID }); } catch (_) {}
+      try { await invoke('cmd_pty_kill', { sessionId: SESSION_ID }); } catch (_) { }
       disposeRecallTerminal();
       initRecallTerminal();
       await openRecall('assistant');
@@ -7665,7 +8262,7 @@
     const originalCheckStatus = checkStatus;
     let prevRecording = false;
     let prevProcessing = false;
-    checkStatus = async function() {
+    checkStatus = async function () {
       await originalCheckStatus();
 
       if (recallExpanded) {
@@ -7691,7 +8288,7 @@
 
     // ── Upcoming meeting auto-expand ──
     const originalCheckUpcoming = checkUpcoming;
-    checkUpcoming = async function() {
+    checkUpcoming = async function () {
       await originalCheckUpcoming();
       const upcomingEl = document.getElementById('upcoming');
       if (upcomingEl && upcomingEl.classList.contains('active') && !recallExpanded && !isRecording) {
@@ -8494,4 +9091,5 @@
     })();
   </script>
 </body>
+
 </html>

@@ -1043,10 +1043,6 @@ fn num_cpus() -> i32 {
 // all work unchanged.
 // ──────────────────────────────────────────────────────────────
 
-/// Known valid parakeet model identifiers.
-#[cfg(feature = "parakeet")]
-const VALID_PARAKEET_MODELS: &[&str] = &["tdt-ctc-110m", "tdt-600m"];
-
 /// Transcribe using parakeet.cpp as a subprocess.
 #[cfg(feature = "parakeet")]
 fn transcribe_with_parakeet(
@@ -1058,11 +1054,12 @@ fn transcribe_with_parakeet(
     let mut stats = FilterStats::default();
 
     // Validate model name before doing any work
-    if !VALID_PARAKEET_MODELS.contains(&config.transcription.parakeet_model.as_str()) {
+    if !crate::config::VALID_PARAKEET_MODELS.contains(&config.transcription.parakeet_model.as_str())
+    {
         return Err(TranscribeError::ParakeetFailed(format!(
             "unknown parakeet model '{}'. Valid: {}",
             config.transcription.parakeet_model,
-            VALID_PARAKEET_MODELS.join(", ")
+            crate::config::VALID_PARAKEET_MODELS.join(", ")
         )));
     }
 
@@ -1102,7 +1099,8 @@ fn transcribe_with_parakeet(
     let vocab_path = resolve_parakeet_vocab_path(config)?;
 
     // Step 4: Run parakeet subprocess
-    // CLI syntax: parakeet <model.safetensors> <audio.wav> --vocab <vocab.txt> [--model type] [--timestamps] [--gpu]
+    // CLI syntax: parakeet <model.safetensors> <audio.wav> --vocab <tokenizer.vocab>
+    // [--model type] [--timestamps] [--gpu]
     let binary = &config.transcription.parakeet_binary;
     tracing::info!(
         binary = %binary,
@@ -1122,12 +1120,17 @@ fn transcribe_with_parakeet(
         .to_str()
         .ok_or_else(|| TranscribeError::ParakeetFailed("vocab path is not valid UTF-8".into()))?;
 
-    let output = Command::new(binary)
+    let mut command = Command::new(binary);
+    command
         .arg(model_str)
         .arg(wav_str)
         .args(["--vocab", vocab_str])
         .args(["--model", &config.transcription.parakeet_model])
-        .arg("--timestamps")
+        .arg("--timestamps");
+    if cfg!(all(target_os = "macos", target_arch = "aarch64")) {
+        command.arg("--gpu");
+    }
+    let output = command
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .output()
@@ -1182,6 +1185,7 @@ fn transcribe_with_parakeet(
 /// Applies the full anti-hallucination pipeline: dedup_segments, dedup_interleaved,
 /// and trim_trailing_noise — matching the whisper path exactly.
 #[cfg(feature = "parakeet")]
+#[derive(Debug)]
 struct ParakeetFilterStats {
     raw_segments: usize,
     after_dedup: usize,
@@ -1216,10 +1220,18 @@ fn parse_parakeet_output(
         if let Some(rest) = line.strip_prefix('[') {
             if let Some(bracket_end) = rest.find(']') {
                 let timestamp_part = &rest[..bracket_end];
-                let text = rest[bracket_end + 1..].trim();
+                let mut text = rest[bracket_end + 1..].trim();
+                // Strip optional confidence prefix: "(0.54) actual text"
+                if text.starts_with('(') {
+                    if let Some(paren_end) = text.find(')') {
+                        text = text[paren_end + 1..].trim();
+                    }
+                }
 
                 if let Some((start_str, _end_str)) = timestamp_part.split_once('-') {
-                    if let Ok(start_secs) = start_str.trim().parse::<f64>() {
+                    // Strip trailing 's' suffix (parakeet.cpp outputs "2.80s")
+                    let start_clean = start_str.trim().trim_end_matches('s');
+                    if let Ok(start_secs) = start_clean.parse::<f64>() {
                         let mins = (start_secs / 60.0) as u64;
                         let secs = (start_secs % 60.0) as u64;
                         if !text.is_empty() {
@@ -1346,11 +1358,32 @@ fn resolve_parakeet_vocab_path(config: &Config) -> Result<PathBuf, TranscribeErr
     let model_dir = config.transcription.model_path.join("parakeet");
     let vocab_name = &config.transcription.parakeet_vocab;
 
-    let candidates = [model_dir.join(vocab_name), model_dir.join("vocab.txt")];
+    let using_generic_name = matches!(vocab_name.as_str(), "" | "tokenizer.vocab" | "vocab.txt");
+    let mut candidates = Vec::new();
 
-    for candidate in &candidates {
+    if !using_generic_name {
+        candidates.push(model_dir.join(vocab_name));
+    }
+
+    for candidate_name in
+        crate::config::parakeet_model_tokenizer_candidates(&config.transcription.parakeet_model)
+    {
+        let candidate = model_dir.join(candidate_name);
+        if !candidates.iter().any(|existing| existing == &candidate) {
+            candidates.push(candidate);
+        }
+    }
+
+    if using_generic_name {
+        let configured = model_dir.join(vocab_name);
+        if !candidates.iter().any(|existing| existing == &configured) {
+            candidates.push(configured);
+        }
+    }
+
+    for candidate in candidates {
         if candidate.exists() {
-            return Ok(candidate.clone());
+            return Ok(candidate);
         }
     }
 
@@ -1666,7 +1699,7 @@ mod tests {
     fn parse_parakeet_text_basic() {
         let text = "[0.00 - 2.50] Hello world\n[3.00 - 5.10] How are you\n";
         let config = Config::default();
-        let result = parse_parakeet_output(text, &config).unwrap();
+        let (result, _) = parse_parakeet_output(text, &config).unwrap();
         let lines: Vec<&str> = result.trim().lines().collect();
         assert_eq!(lines.len(), 2, "should have 2 lines: {:?}", lines);
         assert!(
@@ -1711,7 +1744,7 @@ mod tests {
         // Verify that timestamps > 60s are formatted correctly
         let text = "[125.00 - 126.00] late segment\n";
         let config = Config::default();
-        let result = parse_parakeet_output(text, &config).unwrap();
+        let (result, _) = parse_parakeet_output(text, &config).unwrap();
         assert!(
             result.contains("[2:05]"),
             "125s should be [2:05]: {}",
@@ -1729,7 +1762,7 @@ mod tests {
                      [3.00 - 4.00] Hello world\n\
                      [5.00 - 6.00] Something different\n";
         let config = Config::default();
-        let result = parse_parakeet_output(text, &config).unwrap();
+        let (result, _) = parse_parakeet_output(text, &config).unwrap();
         let lines: Vec<&str> = result.trim().lines().collect();
         assert!(
             lines.len() < 5,
@@ -1799,6 +1832,32 @@ mod tests {
             err.contains("minutes setup --parakeet"),
             "error should tell user how to fix it: {}",
             err
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "parakeet")]
+    fn resolve_parakeet_vocab_prefers_model_specific_tokenizer() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let model_dir = dir.path().join("parakeet");
+        std::fs::create_dir_all(&model_dir).unwrap();
+        std::fs::write(model_dir.join("tokenizer.vocab"), "wrong\t0\n").unwrap();
+        std::fs::write(model_dir.join("tdt-ctc-110m.tokenizer.vocab"), "right\t0\n").unwrap();
+
+        let config = Config {
+            transcription: crate::config::TranscriptionConfig {
+                model_path: dir.path().to_path_buf(),
+                parakeet_model: "tdt-ctc-110m".into(),
+                parakeet_vocab: "tokenizer.vocab".into(),
+                ..crate::config::TranscriptionConfig::default()
+            },
+            ..Config::default()
+        };
+
+        let resolved = resolve_parakeet_vocab_path(&config).unwrap();
+        assert_eq!(
+            resolved.file_name().and_then(|name| name.to_str()),
+            Some("tdt-ctc-110m.tokenizer.vocab")
         );
     }
 
