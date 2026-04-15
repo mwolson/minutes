@@ -1156,6 +1156,8 @@ where
     let structured_actions =
         normalize_action_items_with_speaker_map(structured_actions, &speaker_map);
     let structured_intents = normalize_intents_with_speaker_map(structured_intents, &speaker_map);
+    let structured_decisions =
+        normalize_decisions_with_speaker_map(structured_decisions, &speaker_map);
 
     let entities_started = std::time::Instant::now();
     let entities = build_entity_links(
@@ -1618,6 +1620,8 @@ where
     let structured_actions =
         normalize_action_items_with_speaker_map(structured_actions, &speaker_map);
     let structured_intents = normalize_intents_with_speaker_map(structured_intents, &speaker_map);
+    let structured_decisions =
+        normalize_decisions_with_speaker_map(structured_decisions, &speaker_map);
 
     // Step 5: Write markdown (always)
     let duration = estimate_duration(audio_path);
@@ -2394,6 +2398,23 @@ fn normalize_action_items_with_speaker_map(
                 item.assignee = assignee;
             }
             item
+        })
+        .collect()
+}
+
+fn normalize_decisions_with_speaker_map(
+    decisions: Vec<markdown::Decision>,
+    speaker_map: &[diarize::SpeakerAttribution],
+) -> Vec<markdown::Decision> {
+    decisions
+        .into_iter()
+        .map(|mut decision| {
+            if let Some(topic) = decision.topic.as_deref() {
+                if let Some(resolved) = resolve_speaker_reference(topic, speaker_map, true) {
+                    decision.topic = Some(resolved);
+                }
+            }
+            decision
         })
         .collect()
 }
