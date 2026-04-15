@@ -2337,7 +2337,7 @@ fn normalize_attendee_candidate(raw: &str) -> Option<String> {
         return reference.name_hint.map(str::to_string);
     }
 
-    Some(trimmed.to_string())
+    Some(strip_name_disambiguation(trimmed).to_string())
 }
 
 fn resolve_speaker_reference(
@@ -2924,7 +2924,12 @@ fn add_person_entity(entities: &mut BTreeMap<String, (String, BTreeSet<String>)>
         return;
     }
 
-    let label = trimmed
+    let canonical = strip_email_domain(strip_name_disambiguation(&trimmed)).trim();
+    if canonical.is_empty() {
+        return;
+    }
+
+    let label = canonical
         .split_whitespace()
         .map(capitalize_token)
         .collect::<Vec<_>>()
@@ -2937,10 +2942,38 @@ fn add_person_entity(entities: &mut BTreeMap<String, (String, BTreeSet<String>)>
     let entry = entities
         .entry(slug)
         .or_insert_with(|| (label.clone(), BTreeSet::new()));
-    entry.1.insert(trimmed.to_lowercase());
-    if raw.trim() != trimmed {
-        entry.1.insert(raw.trim().to_lowercase());
+    entry.1.insert(canonical.to_lowercase());
+    if trimmed != canonical {
+        entry.1.insert(trimmed.to_lowercase());
     }
+    let raw_trimmed = raw.trim();
+    if raw_trimmed != trimmed && raw_trimmed != canonical {
+        entry.1.insert(raw_trimmed.to_lowercase());
+    }
+}
+
+/// Strip a " / Other" disambiguation suffix, returning the canonical head.
+/// Example: `"Mat / Matthew"` → `"Mat"`. If no separator is present, returns
+/// the input unchanged. The LLM sometimes produces hedged names during
+/// speaker attribution; the head is always the best guess.
+fn strip_name_disambiguation(s: &str) -> &str {
+    match s.split_once(" / ") {
+        Some((head, _)) => head.trim_end(),
+        None => s,
+    }
+}
+
+/// If the string is an email address (`local@domain.tld`), return just the
+/// local part. Otherwise return the input unchanged. This prevents email
+/// forms from spawning separate person entities when the same human also
+/// appears by display name elsewhere in the meeting.
+fn strip_email_domain(s: &str) -> &str {
+    if let Some((local, domain)) = s.split_once('@') {
+        if !local.is_empty() && domain.contains('.') {
+            return local;
+        }
+    }
+    s
 }
 
 fn add_project_entity(
@@ -3948,6 +3981,118 @@ mod tests {
         assert!(!project_slugs.contains(&"speaker-1-provide-speaker"));
         assert!(!project_slugs.contains(&"reach-out"));
         assert!(!project_slugs.contains(&"pioneer-asked-build"));
+    }
+
+    #[test]
+    fn build_entity_links_folds_email_and_slash_forms_onto_canonical_person() {
+        let entities = build_entity_links(
+            "Samantha <> Mat",
+            None,
+            &[
+                "mathieu@followthedata.co".into(),
+                "redacted@example.com".into(),
+                "Samantha".into(),
+                "Mat / Matthew".into(),
+                "Dan".into(),
+            ],
+            &[],
+            &[],
+            &[],
+            &[],
+        );
+
+        let slugs: Vec<&str> = entities.people.iter().map(|e| e.slug.as_str()).collect();
+        assert!(
+            slugs.contains(&"mathieu"),
+            "email localpart kept: {:?}",
+            slugs
+        );
+        assert!(slugs.contains(&"samantha"), "samantha present: {:?}", slugs);
+        assert!(slugs.contains(&"mat"), "bare Mat present: {:?}", slugs);
+        assert!(slugs.contains(&"dan"), "dan present: {:?}", slugs);
+        // The email form and the bare name collapsed for Samantha.
+        assert_eq!(
+            slugs.iter().filter(|s| **s == "samantha").count(),
+            1,
+            "samantha deduped: {:?}",
+            slugs
+        );
+        // The slash-disambiguated form does not spawn its own slug.
+        assert!(
+            !slugs.contains(&"mat-matthew"),
+            "slash-disambiguation stripped: {:?}",
+            slugs
+        );
+        // The email form does not spawn a slug that includes the domain.
+        assert!(
+            !slugs.contains(&"mathieu-followthedata-co"),
+            "email domain stripped: {:?}",
+            slugs
+        );
+        assert!(
+            !slugs.contains(&"redacted-example-com"),
+            "email domain stripped for samantha: {:?}",
+            slugs
+        );
+
+        let samantha = entities
+            .people
+            .iter()
+            .find(|e| e.slug == "samantha")
+            .unwrap();
+        assert!(
+            samantha
+                .aliases
+                .iter()
+                .any(|a| a == "redacted@example.com"),
+            "original email preserved as alias: {:?}",
+            samantha.aliases
+        );
+
+        let mat = entities.people.iter().find(|e| e.slug == "mat").unwrap();
+        assert!(
+            mat.aliases.iter().any(|a| a == "mat / matthew"),
+            "original slash form preserved as alias: {:?}",
+            mat.aliases
+        );
+    }
+
+    #[test]
+    fn strip_name_disambiguation_handles_common_shapes() {
+        assert_eq!(strip_name_disambiguation("Mat / Matthew"), "Mat");
+        assert_eq!(strip_name_disambiguation("Mat"), "Mat");
+        // No surrounding spaces around "/" means it's not a disambiguation hedge.
+        assert_eq!(strip_name_disambiguation("A/B Testing"), "A/B Testing");
+    }
+
+    #[test]
+    fn strip_email_domain_returns_localpart_only_for_valid_emails() {
+        assert_eq!(strip_email_domain("mathieu@followthedata.co"), "mathieu");
+        assert_eq!(strip_email_domain("redacted@example.com"), "samantha");
+        // Missing dot in domain → not treated as email.
+        assert_eq!(strip_email_domain("mat@localhost"), "mat@localhost");
+        // Missing local part → unchanged.
+        assert_eq!(strip_email_domain("@bad.tld"), "@bad.tld");
+        // No '@' at all.
+        assert_eq!(strip_email_domain("Mat"), "Mat");
+    }
+
+    #[test]
+    fn merge_attendees_strips_name_disambiguation_hedge() {
+        let merged = merge_attendees(
+            &["Andrea".into()],
+            &["Mat / Matthew".into(), "Samantha".into()],
+        );
+        assert!(
+            merged.iter().any(|a| a == "Mat"),
+            "slash suffix stripped in attendees: {:?}",
+            merged
+        );
+        assert!(
+            !merged.iter().any(|a| a == "Mat / Matthew"),
+            "slash-hedge form not kept: {:?}",
+            merged
+        );
     }
 
     #[test]
