@@ -256,7 +256,47 @@ pub struct CallDetectionConfig {
 #[serde(default)]
 pub struct IdentityConfig {
     pub name: Option<String>,
+    /// Single primary email. Retained for backwards compatibility with
+    /// existing `config.toml` files. New configs should prefer `emails`.
     pub email: Option<String>,
+    /// All email addresses the user sends from. Folded onto the canonical
+    /// person entity so calendar attendees arriving as
+    /// `you@work.com`/`you@personal.com` don't spawn duplicate people.
+    pub emails: Vec<String>,
+    /// Alternate name forms (nicknames, formal variants) for the user.
+    /// Example: name="Mat", aliases=["Mathieu", "Matthew"]. Used for the
+    /// same fold as `emails` so `mathieu@x.com` → `Mathieu` → canonical
+    /// `Mat`.
+    pub aliases: Vec<String>,
+}
+
+impl IdentityConfig {
+    /// Every string that should map to the user's canonical entity:
+    /// the legacy `email`, all `emails`, and all `aliases`. Duplicates
+    /// and empties are filtered. Case-insensitive de-duplication.
+    pub fn all_user_aliases(&self) -> Vec<String> {
+        let mut seen = std::collections::HashSet::new();
+        let mut out = Vec::new();
+        let mut push = |s: &str| {
+            let trimmed = s.trim();
+            if trimmed.is_empty() {
+                return;
+            }
+            if seen.insert(trimmed.to_ascii_lowercase()) {
+                out.push(trimmed.to_string());
+            }
+        };
+        if let Some(email) = &self.email {
+            push(email);
+        }
+        for email in &self.emails {
+            push(email);
+        }
+        for alias in &self.aliases {
+            push(alias);
+        }
+        out
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

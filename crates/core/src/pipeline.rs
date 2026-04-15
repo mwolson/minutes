@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, IdentityConfig};
 use crate::diarize;
 use crate::error::MinutesError;
 use crate::logging;
@@ -874,6 +874,7 @@ pub fn write_transcript_artifact(
         &[],
         &[],
         &[],
+        Some(&config.identity),
     );
     let people = entities
         .people
@@ -1168,6 +1169,7 @@ where
         &structured_decisions,
         &structured_intents,
         &artifact.frontmatter.tags,
+        Some(&config.identity),
     );
     log_structured_llm_step(
         "entity_extract",
@@ -1646,6 +1648,7 @@ where
         &structured_decisions,
         &structured_intents,
         &[],
+        Some(&config.identity),
     );
     log_structured_llm_step(
         "entity_extract",
@@ -2780,6 +2783,7 @@ fn infer_topic(text: &str) -> Option<String> {
     (!is_task_like_project_candidate(&candidate, Some(text))).then_some(candidate)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn build_entity_links(
     title: &str,
     pre_context: Option<&str>,
@@ -2788,6 +2792,7 @@ fn build_entity_links(
     decisions: &[markdown::Decision],
     intents: &[markdown::Intent],
     tags: &[String],
+    identity: Option<&IdentityConfig>,
 ) -> markdown::EntityLinks {
     let mut people: BTreeMap<String, (String, BTreeSet<String>)> = BTreeMap::new();
     let mut projects: BTreeMap<String, (String, BTreeSet<String>)> = BTreeMap::new();
@@ -2802,6 +2807,10 @@ fn build_entity_links(
         if let Some(who) = &intent.who {
             add_person_entity(&mut people, who);
         }
+    }
+
+    if let Some(identity) = identity {
+        fold_user_identity(&mut people, identity);
     }
 
     for decision in decisions {
@@ -2836,6 +2845,73 @@ fn build_entity_links(
                 aliases: aliases.into_iter().collect(),
             })
             .collect(),
+    }
+}
+
+/// Fold any person entity that matches a configured user email or alias
+/// onto the canonical user entity (keyed by `slugify(identity.name)`).
+///
+/// Covers the common case of one human appearing under several labels
+/// in a single meeting — e.g. recorded by "Mat", attending as
+/// "mathieu@work.com" on one calendar and "mat@personal.com" on
+/// another, mentioned in transcript as "Mathieu". Without this fold,
+/// each surface spawns its own entity and both the markdown frontmatter
+/// and `graph.db` end up with duplicate Person rows that compound on
+/// every rerun. Non-user entities are unaffected.
+fn fold_user_identity(
+    people: &mut BTreeMap<String, (String, BTreeSet<String>)>,
+    identity: &IdentityConfig,
+) {
+    let Some(name) = identity
+        .name
+        .as_ref()
+        .map(|n| n.trim())
+        .filter(|n| !n.is_empty())
+    else {
+        return;
+    };
+    let canonical_slug = slugify(name);
+    if canonical_slug.is_empty() {
+        return;
+    }
+    // Only fold when the user is actually a participant in this meeting.
+    // If the canonical entry doesn't exist, don't invent it — the meeting
+    // may genuinely not include the user (a recorded third-party call,
+    // say).
+    if !people.contains_key(&canonical_slug) {
+        return;
+    }
+
+    let alias_slugs: Vec<String> = identity
+        .all_user_aliases()
+        .into_iter()
+        .filter_map(|alias| {
+            let canonical = strip_email_domain(strip_name_disambiguation(alias.trim())).trim();
+            if canonical.is_empty() {
+                return None;
+            }
+            let label: String = canonical
+                .split_whitespace()
+                .map(capitalize_token)
+                .collect::<Vec<_>>()
+                .join(" ");
+            let slug = slugify(&label);
+            if slug.is_empty() || slug == canonical_slug {
+                None
+            } else {
+                Some(slug)
+            }
+        })
+        .collect();
+
+    for slug in alias_slugs {
+        if let Some((label, aliases)) = people.remove(&slug) {
+            let canonical_entry = people
+                .get_mut(&canonical_slug)
+                .expect("canonical slug was verified to exist above");
+            canonical_entry.1.insert(label.to_ascii_lowercase());
+            canonical_entry.1.extend(aliases);
+        }
     }
 }
 
@@ -3922,6 +3998,7 @@ mod tests {
             &decisions,
             &intents,
             &["advisor-platform".into()],
+            None,
         );
 
         assert!(entities.people.iter().any(|entity| entity.slug == "mat"));
@@ -3970,6 +4047,7 @@ mod tests {
             ],
             &[],
             &[],
+            None,
         );
 
         let project_slugs: Vec<&str> = entities
@@ -3999,6 +4077,7 @@ mod tests {
             &[],
             &[],
             &[],
+            None,
         );
 
         let slugs: Vec<&str> = entities.people.iter().map(|e| e.slug.as_str()).collect();
@@ -4054,6 +4133,119 @@ mod tests {
             mat.aliases.iter().any(|a| a == "mat / matthew"),
             "original slash form preserved as alias: {:?}",
             mat.aliases
+        );
+    }
+
+    #[test]
+    fn build_entity_links_folds_user_identity_aliases_and_emails() {
+        let identity = IdentityConfig {
+            name: Some("Mat".into()),
+            email: None,
+            emails: vec![
+                "mathieu@followthedata.co".into(),
+                "matsilverstein@gmail.com".into(),
+            ],
+            aliases: vec!["Mathieu".into(), "Matthew".into()],
+        };
+
+        let entities = build_entity_links(
+            "Weekly sync",
+            None,
+            &[
+                "mathieu@followthedata.co".into(),
+                "matsilverstein@gmail.com".into(),
+                "Mat".into(),
+                "Mathieu".into(),
+                "Dan".into(),
+                "Andrea".into(),
+            ],
+            &[],
+            &[],
+            &[],
+            &[],
+            Some(&identity),
+        );
+
+        let slugs: Vec<&str> = entities.people.iter().map(|e| e.slug.as_str()).collect();
+        // Canonical Mat is present; all alias forms folded in.
+        assert!(slugs.contains(&"mat"), "canonical mat present: {:?}", slugs);
+        assert!(!slugs.contains(&"mathieu"), "mathieu folded: {:?}", slugs);
+        assert!(
+            !slugs.contains(&"matsilverstein"),
+            "matsilverstein folded: {:?}",
+            slugs
+        );
+        assert!(!slugs.contains(&"matthew"), "matthew folded: {:?}", slugs);
+        // Non-user entities untouched.
+        assert!(slugs.contains(&"dan"), "dan present: {:?}", slugs);
+        assert!(slugs.contains(&"andrea"), "andrea present: {:?}", slugs);
+
+        let mat = entities.people.iter().find(|e| e.slug == "mat").unwrap();
+        assert!(
+            mat.aliases.iter().any(|a| a == "mathieu"),
+            "Mathieu folded as alias: {:?}",
+            mat.aliases
+        );
+        assert!(
+            mat.aliases.iter().any(|a| a == "mathieu@followthedata.co"),
+            "work email folded as alias: {:?}",
+            mat.aliases
+        );
+        assert!(
+            mat.aliases.iter().any(|a| a == "matsilverstein@gmail.com"),
+            "personal email folded as alias: {:?}",
+            mat.aliases
+        );
+    }
+
+    #[test]
+    fn fold_user_identity_skips_meeting_without_user() {
+        // If the user isn't a participant, don't invent an entity.
+        let identity = IdentityConfig {
+            name: Some("Mat".into()),
+            email: Some("mathieu@followthedata.co".into()),
+            emails: vec![],
+            aliases: vec!["Mathieu".into()],
+        };
+
+        let entities = build_entity_links(
+            "Third-party call",
+            None,
+            &["Dan".into(), "Andrea".into()],
+            &[],
+            &[],
+            &[],
+            &[],
+            Some(&identity),
+        );
+
+        let slugs: Vec<&str> = entities.people.iter().map(|e| e.slug.as_str()).collect();
+        assert!(!slugs.contains(&"mat"), "mat not invented: {:?}", slugs);
+        assert_eq!(slugs.len(), 2);
+    }
+
+    #[test]
+    fn identity_config_all_user_aliases_dedupes_and_preserves_order() {
+        let identity = IdentityConfig {
+            name: Some("Mat".into()),
+            email: Some("mathieu@followthedata.co".into()),
+            emails: vec![
+                "mathieu@followthedata.co".into(), // dup of legacy email
+                "matsilverstein@gmail.com".into(),
+                "   ".into(), // blank
+            ],
+            aliases: vec!["Mathieu".into(), "mathieu".into()],
+        };
+
+        let aliases = identity.all_user_aliases();
+        assert_eq!(
+            aliases,
+            vec![
+                "mathieu@followthedata.co".to_string(),
+                "matsilverstein@gmail.com".to_string(),
+                "Mathieu".to_string(),
+            ],
+            "legacy email first, dedup case-insensitively, skip blanks"
         );
     }
 
@@ -4181,6 +4373,7 @@ mod tests {
             }],
             &intents,
             &[],
+            None,
         );
 
         let frontmatter = markdown::Frontmatter {
@@ -4252,6 +4445,7 @@ mod tests {
                 by_date: Some("Friday".into()),
             }],
             &[],
+            None,
         );
 
         let tags = derive_structured_tags(
