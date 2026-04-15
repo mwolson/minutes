@@ -516,6 +516,7 @@ return output"#,
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(unix)]
     use std::os::unix::fs::PermissionsExt;
 
     #[test]
@@ -570,6 +571,13 @@ mod tests {
         );
     }
 
+    // Tests that shell out to a POSIX helper script are unix-only. On
+    // Windows there is no chmod +x equivalent and the fake helper below
+    // wouldn't execute as a script. The behavior being tested
+    // (argument-passing contract between Minutes and the EventKit
+    // helper) is itself macOS-only anyway, so there's nothing to validate
+    // on Windows.
+    #[cfg(unix)]
     #[test]
     fn query_overlap_via_eventkit_passes_reference_timestamp() {
         let tempdir = tempfile::tempdir().unwrap();
@@ -595,6 +603,7 @@ mod tests {
         );
     }
 
+    #[cfg(unix)]
     #[test]
     fn query_overlap_via_eventkit_omits_reference_timestamp_when_not_provided() {
         let tempdir = tempfile::tempdir().unwrap();
