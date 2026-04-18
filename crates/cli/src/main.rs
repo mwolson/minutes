@@ -196,6 +196,21 @@ enum Commands {
         /// output and process it with full diagnostic logging.
         #[arg(long, value_name = "WAV_FILE")]
         diagnose: Option<PathBuf>,
+
+        /// Start with the microphone muted. System audio still captures.
+        /// Useful for passive attendance (webinars, all-hands). Toggle
+        /// mid-recording with `minutes mic-toggle`.
+        #[arg(long)]
+        mute_mic: bool,
+    },
+
+    /// Toggle microphone mute for an active dual-source recording. System
+    /// audio continues capturing; only the mic stream is silenced.
+    MicToggle {
+        /// Force a specific state instead of toggling. Use "on" to mute
+        /// or "off" to unmute; omit to flip the current state.
+        #[arg(long, value_parser = ["on", "off"])]
+        state: Option<String>,
     },
 
     /// Add a note to the current recording
@@ -874,12 +889,20 @@ fn main() -> Result<()> {
             source,
             call,
             diagnose,
+            mute_mic,
         } => {
             if let Some(lang) = language {
                 config.transcription.language = Some(lang);
             }
 
             resolve_recording_device_overrides(&mut config, &source, device, call)?;
+
+            // Pre-arm the mute sentinel so the recording starts with the mic
+            // muted. The record loop picks this up on its first iteration.
+            if mute_mic {
+                minutes_core::streaming::set_mic_muted_with_sentinel(true);
+                eprintln!("[minutes] Starting with microphone muted (system audio only).");
+            }
 
             if call && source.len() < 2 {
                 // --call with auto-detect: resolve loopback device
@@ -933,6 +956,7 @@ fn main() -> Result<()> {
             eprintln!("Recording extended — auto-stop timers reset.");
             Ok(())
         }
+        Commands::MicToggle { state } => cmd_mic_toggle(state.as_deref()),
         Commands::ProcessQueue => cmd_process_queue(&config),
         Commands::ParakeetHelper {
             binary,
@@ -1549,6 +1573,25 @@ fn spawn_queue_worker() -> Result<()> {
         .stderr(std::process::Stdio::null())
         .spawn()?;
     let _ = child.id();
+    Ok(())
+}
+
+fn cmd_mic_toggle(force_state: Option<&str>) -> Result<()> {
+    let new_state = match force_state {
+        Some("on") => minutes_core::streaming::set_mic_muted_with_sentinel(true),
+        Some("off") => minutes_core::streaming::set_mic_muted_with_sentinel(false),
+        _ => minutes_core::streaming::toggle_mic_mute_with_sentinel(),
+    };
+    if new_state {
+        println!("mic muted — system audio still capturing");
+    } else {
+        println!("mic unmuted");
+    }
+    if !minutes_core::pid::status().recording {
+        eprintln!(
+            "[minutes] No active recording — the sentinel is set and will take effect on the next dual-source `minutes record`."
+        );
+    }
     Ok(())
 }
 

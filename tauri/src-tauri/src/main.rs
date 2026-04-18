@@ -1293,6 +1293,23 @@ fn main() {
                 None::<&str>,
             )?;
             let stop_item_ref = stop_item.clone();
+            // Enabled regardless of recording state: toggling when no recording
+            // is active primes the sentinel so the NEXT dual-source recording
+            // starts muted. During a recording, the toggle takes effect on the
+            // next loop iteration of record_to_wav_dual_source.
+            let initial_mic_muted = minutes_core::streaming::is_mic_muted();
+            let mic_mute_item = MenuItem::with_id(
+                app,
+                "mic-mute-toggle",
+                if initial_mic_muted {
+                    "Mute My Mic (Recording Only) ✓"
+                } else {
+                    "Mute My Mic (Recording Only)"
+                },
+                true,
+                None::<&str>,
+            )?;
+            let mic_mute_item_ref = mic_mute_item.clone();
             let sep = MenuItem::with_id(app, "sep1", "──────────", false, None::<&str>)?;
             let note_item = MenuItem::with_id(app, "note", "Add Note...", true, None::<&str>)?;
             let list_item =
@@ -1341,6 +1358,7 @@ fn main() {
                 &record_item,
                 &quick_thought_item,
                 &stop_item,
+                &mic_mute_item,
                 &sep,
                 &note_item,
                 &assistant_item,
@@ -1367,6 +1385,7 @@ fn main() {
                     let stp_item = stop_item_ref.clone();
                     let screen_share_hidden = screen_share_hidden.clone();
                     let screen_share_item_ref = screen_share_item_ref.clone();
+                    let mic_mute_item_ref = mic_mute_item_ref.clone();
                     match event.id.as_ref() {
                         "open" => {
                             show_main_window(app);
@@ -1461,6 +1480,16 @@ fn main() {
                                     update_tray_state(&app_done, false);
                                 }
                             });
+                        }
+                        "mic-mute-toggle" => {
+                            let new_state =
+                                minutes_core::streaming::toggle_mic_mute_with_sentinel();
+                            let label = if new_state {
+                                "Mute My Mic (Recording Only) ✓"
+                            } else {
+                                "Mute My Mic (Recording Only)"
+                            };
+                            mic_mute_item_ref.set_text(label).ok();
                         }
                         "note" => {
                             show_note_window(app);
@@ -1737,6 +1766,8 @@ fn main() {
             commands::cmd_stop_recording,
             commands::cmd_cancel_call_end_countdown,
             commands::cmd_extend_recording,
+            commands::cmd_toggle_mic_mute,
+            commands::cmd_mic_mute_state,
             commands::cmd_open_file,
             commands::cmd_read_text_file,
             commands::cmd_get_text_file_access,

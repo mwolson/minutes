@@ -3978,6 +3978,23 @@ pub fn cmd_add_note(text: String) -> Result<String, String> {
     minutes_core::notes::add_note(&text)
 }
 
+/// Toggle (or force-set) the Minutes-local mic mute for the active
+/// dual-source recording. Returns the new muted state. System audio
+/// keeps capturing; only the mic stream is silenced.
+#[tauri::command]
+pub fn cmd_toggle_mic_mute(force_state: Option<bool>) -> bool {
+    match force_state {
+        Some(state) => minutes_core::streaming::set_mic_muted_with_sentinel(state),
+        None => minutes_core::streaming::toggle_mic_mute_with_sentinel(),
+    }
+}
+
+/// Returns the current mic-mute state as the Tauri process sees it.
+#[tauri::command]
+pub fn cmd_mic_mute_state() -> bool {
+    minutes_core::streaming::is_mic_muted()
+}
+
 #[tauri::command]
 pub fn cmd_status(state: tauri::State<AppState>) -> serde_json::Value {
     let recording = state.recording.load(Ordering::Relaxed);

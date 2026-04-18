@@ -876,6 +876,11 @@ fn record_to_wav_dual_source(
     plan: DualCapturePlan,
 ) -> Result<(), CaptureError> {
     crate::pid::check_and_clear_sentinel();
+    // Refresh the in-process mic-mute flag from the sentinel. The CLI
+    // `--mute-mic` flag writes the sentinel before getting here, and the
+    // loop below keeps re-reading it so Tauri/CLI toggles made during the
+    // recording take effect.
+    crate::streaming::refresh_mic_mute_from_sentinel();
 
     let mut writers = DualCaptureWriters::new(output_path)?;
     AUDIO_LEVEL.store(0, Ordering::Relaxed);
@@ -974,6 +979,10 @@ fn record_to_wav_dual_source(
             safety_guard.extend();
         }
 
+        // Sync mute state from sentinel so CLI/Tauri toggles made in
+        // another process are picked up by this recording loop.
+        crate::streaming::refresh_mic_mute_from_sentinel();
+
         let call_app_active = detect_active_call_app(config).is_some();
         match safety_guard.check(audio_level(), call_app_active) {
             SafetyAction::None => {}
@@ -1062,12 +1071,25 @@ fn record_to_wav_dual_source(
         // The old code used select! to grab ONE chunk per iteration, which
         // on slower machines meant one source got flushed before the other
         // source's chunk for that same slot arrived. (#118)
+        //
+        // Voice samples pass through `mute_voice_if_needed`: when the mic
+        // is muted, samples are zeroed but their length (and therefore the
+        // slot's sample count) is preserved so dual-source alignment and
+        // stem writers stay in lockstep.
+        let mute_voice_if_needed = |samples: Vec<f32>| -> Vec<f32> {
+            if crate::streaming::is_mic_muted() {
+                vec![0.0; samples.len()]
+            } else {
+                samples
+            }
+        };
+
         let mut got_any = false;
         while let Ok(chunk) = voice_rx.try_recv() {
             let slot = slot_for(&chunk);
             next_slot.get_or_insert(slot);
             max_voice_slot = Some(max_voice_slot.map_or(slot, |s| s.max(slot)));
-            pending_voice.insert(slot, chunk.samples);
+            pending_voice.insert(slot, mute_voice_if_needed(chunk.samples));
             got_any = true;
         }
         while let Ok(chunk) = system_rx.try_recv() {
@@ -1086,7 +1108,7 @@ fn record_to_wav_dual_source(
                         let slot = slot_for(&chunk);
                         next_slot.get_or_insert(slot);
                         max_voice_slot = Some(max_voice_slot.map_or(slot, |s| s.max(slot)));
-                        pending_voice.insert(slot, chunk.samples);
+                        pending_voice.insert(slot, mute_voice_if_needed(chunk.samples));
                     }
                 }
                 recv(system_rx) -> chunk => {
@@ -1148,6 +1170,9 @@ fn record_to_wav_dual_source(
     if let Some(handle) = sidecar_handle {
         handle.join().ok();
     }
+
+    // Clear mute state so the next recording starts fresh.
+    crate::streaming::clear_mic_mute_for_new_recording();
 
     let sidecar_drops = SIDECAR_DROPS.swap(0, Ordering::Relaxed);
     if sidecar_drops > 0 {
@@ -1215,6 +1240,11 @@ pub fn record_to_wav(
 
     // Clear any stale stop sentinel from a previous session
     crate::pid::check_and_clear_sentinel();
+    // Single-source recording has no gate (muting a mic-only stream just
+    // produces silence, not a useful outcome), but we clear any stale
+    // mute sentinel so it doesn't leak into the next dual-source session.
+    #[cfg(feature = "streaming")]
+    crate::streaming::clear_mic_mute_for_new_recording();
 
     let host = cpal::default_host();
     let device_override = match &capture_plan {
